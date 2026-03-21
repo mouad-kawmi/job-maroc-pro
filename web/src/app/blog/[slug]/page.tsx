@@ -3,6 +3,16 @@ import { notFound } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 
+// AdSense placeholder — replace with real <ins> tag when approved
+function AdSpot({ label, height = 'min-h-[90px]' }: { label: string, height?: string }) {
+  return (
+    <div className={`w-full ${height} bg-gradient-to-r from-slate-50 to-slate-100 border border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-1`}>
+      <span className="text-[10px] uppercase tracking-widest font-bold text-slate-300">Advertisement</span>
+      <span className="text-slate-300 text-[10px]">{label}</span>
+    </div>
+  );
+}
+
 export default async function BlogPost(props: { params: Promise<{ slug: string }>, searchParams: Promise<{ [key: string]: string | undefined }> }) {
   const params = await props.params;
   const searchParams = await props.searchParams;
@@ -289,20 +299,90 @@ export default async function BlogPost(props: { params: Promise<{ slug: string }
   const article = articles[params.slug];
   if (!article) return notFound();
 
-  const t = { ar: { back: 'الرجوع للمدونة' }, fr: { back: 'Retour au blog' } }[lang];
+  const t = {
+    ar: { back: '← العودة للمدونة', readingTime: 'دقائق للقراءة', share: 'شارك المقال' },
+    fr: { back: '→ Retour au blog', readingTime: 'min de lecture', share: 'Partager' }
+  }[lang];
+
+  // Estimate reading time (avg 200 words/min)
+  const wordCount = article.content[lang].replace(/<[^>]*>/g, '').split(/\s+/).length;
+  const readTime = Math.max(1, Math.ceil(wordCount / 200));
 
   return (
-    <div className="bg-[#f8fafc] min-h-screen font-sans flex flex-col" dir={dir}>
+    <div className="min-h-screen font-sans flex flex-col" style={{ background: '#f1f5f9' }} dir={dir}>
       <Navbar lang={lang} />
-      <main className="container mx-auto px-4 max-w-3xl flex-grow py-12">
-        <Link href={`/blog?lang=${lang}`} className="text-sm font-bold text-slate-500 hover:text-blue-600 mb-6 inline-block">
-             {lang === 'ar' ? '←' : '→'} {t.back}
+
+      {/* AD SPOT 1 — Top of article */}
+      <div className="container mx-auto px-4 max-w-3xl mt-4">
+        <AdSpot label="728x90 — Leaderboard (Top of Article)" />
+      </div>
+
+      <main className="container mx-auto px-4 max-w-3xl py-6 flex-grow">
+        {/* Back link */}
+        <Link href={`/blog?lang=${lang}`} className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-blue-600 mb-5 transition-colors">
+          {t.back}
         </Link>
-        <article className="bg-white p-8 md:p-12 rounded-3xl shadow-sm border border-slate-100 prose prose-slate max-w-none">
-            <h1 className="text-3xl font-black mb-8 leading-tight">{article.title[lang]}</h1>
-            <div dangerouslySetInnerHTML={{ __html: article.content[lang] }}></div>
+
+        <article className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+          {/* Article Header */}
+          <div className="bg-gradient-to-br from-[#0f2167] to-[#1a3a8f] px-8 py-10 text-white">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="bg-white/15 border border-white/20 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase">
+                ✍️ {lang === 'ar' ? 'مقال' : 'Article'}
+              </span>
+              <span className="text-blue-300 text-[10px] font-bold">
+                ⏱️ {readTime} {t.readingTime}
+              </span>
+            </div>
+            <h1 className="text-xl md:text-3xl font-black leading-tight">{article.title[lang]}</h1>
+          </div>
+
+          {/* AD SPOT 2 — Under title, above content */}
+          <div className="px-6 md:px-10 pt-6">
+            <AdSpot label="336x280 — Rectangle Ad (Under Article Title)" height="min-h-[90px]" />
+          </div>
+
+          {/* Article Content */}
+          <div
+            className="px-6 md:px-10 py-8 prose prose-slate max-w-none
+              prose-headings:font-black prose-headings:text-slate-800
+              prose-h3:text-lg prose-h3:mt-8 prose-h3:mb-3
+              prose-p:text-slate-600 prose-p:leading-relaxed prose-p:text-sm md:prose-p:text-base
+              prose-li:text-slate-600 prose-li:text-sm md:prose-li:text-base
+              prose-strong:text-slate-800
+              prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline"
+            dir="auto"
+            dangerouslySetInnerHTML={{ __html: article.content[lang] }}
+          />
+
+          {/* AD SPOT 3 — End of article */}
+          <div className="px-6 md:px-10 pb-8">
+            <AdSpot label="728x90 — Horizontal Banner (End of Article)" />
+          </div>
+
+          {/* Share CTA */}
+          <div className="px-6 md:px-10 pb-8">
+            <div className="bg-gradient-to-r from-blue-50 to-slate-50 border border-blue-100 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+              <div>
+                <p className="font-black text-slate-800 text-sm">{lang === 'ar' ? '💡 هل أفادك هذا المقال؟' : '💡 Cet article vous a aidé ?'}</p>
+                <p className="text-slate-500 text-xs mt-1">{lang === 'ar' ? 'شاركه مع أصدقائك الباحثين عن عمل' : 'Partagez-le avec vos amis en recherche d\'emploi'}</p>
+              </div>
+              <Link
+                href={`/blog?lang=${lang}`}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-black text-sm py-2.5 px-6 rounded-xl transition-colors shrink-0"
+              >
+                {lang === 'ar' ? 'مقالات أخرى ←' : 'Autres articles →'}
+              </Link>
+            </div>
+          </div>
         </article>
+
+        {/* AD SPOT 4 — Below article */}
+        <div className="mt-6">
+          <AdSpot label="728x90 — Footer Banner (Below Article)" />
+        </div>
       </main>
+
       <Footer lang={lang} />
     </div>
   );
