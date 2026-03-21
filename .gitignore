@@ -21,3 +21,15 @@ Thumbs.db
 # Secrets
 credentials.json
 token.json
+service_account.json
+
+# Local test/fix scripts
+test_key.py
+fix_db.py
+debug_models.py
+
+# Database files (managed by GitHub Actions, not committed)
+*.db
+*.sqlite
+latest_jobs.json
+rewritten_jobs.json

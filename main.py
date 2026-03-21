@@ -83,23 +83,30 @@ def main_flow():
     print(f"[+] Found {len(new_jobs)} NEW jobs.")
 
     # 3. Setup Gemini
-    client = ai_rewriter.setup_gemini()
-    if not client:
-        print("[!] Gemini API not configured.")
+    model = ai_rewriter.setup_gemini()
+    if not model:
+        print("[!] Gemini API not configured or hit an error.")
         return
 
     for i, job in enumerate(new_jobs):
         print(f"[*] Post ({i+1}/{len(new_jobs)}): {job['title']}")
         
         # AI Rewrite (Uses full_description from scraper)
-        rewritten_data = ai_rewriter.rewrite_job(client, job)
-        if not rewritten_data:
-            continue
+        rewritten_data = ai_rewriter.rewrite_job(model, job)
+        if rewritten_data:
+            job['content_html'] = rewritten_data.get('content_html', '')
+            job['title_fr'] = rewritten_data.get('title_fr', '')
+            job['organization_fr'] = rewritten_data.get('organization_fr', '')
+        else:
+            print("[!] AI failed, saving raw job data as fallback.")
+            raw_desc = job.get('full_description', '').strip()
+            if not raw_desc or raw_desc == "No description available.":
+                raw_desc = f"### {job.get('title', '')}\n\n* **المؤسسة:** {job.get('organization', '')}\n* **عدد المناصب:** {job.get('posts', '')}\n* **آخر أجل:** {job.get('deadline', '')}\n\n[يرجى زيارة رابط التسجيل الأصلي لمعرفة الشروط والتفاصيل الكاملة للإعلان]({job['url']})"
             
-        job['content_html'] = rewritten_data.get('content_html', '')
-        job['title_fr'] = rewritten_data.get('title_fr', '')
-        job['organization_fr'] = rewritten_data.get('organization_fr', '')
-        
+            job['content_html'] = raw_desc
+            job['title_fr'] = job.get('title', '')
+            job['organization_fr'] = job.get('organization', '')
+            
         # 4. Save to Database
         job_id = save_job_to_db(job)
         if job_id:
