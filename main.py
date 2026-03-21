@@ -15,6 +15,8 @@ import indexing_api
 DB_FILE = "web/jobs.db"
 
 def init_db():
+    # Create the web/ directory if it doesn't exist (needed for GitHub Actions)
+    os.makedirs(os.path.dirname(DB_FILE), exist_ok=True)
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute('''
