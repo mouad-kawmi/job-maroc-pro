@@ -3,17 +3,14 @@ import { getDb, Job } from '@/lib/db';
 import { notFound } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
+import { AdSlot } from '@/components/AdSlot';
+import { isExpired } from '@/lib/date-utils';
+import { formatPostsLabel } from '@/lib/job-utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-// AdSense placeholder component (replace with real ins tag later)
 function AdSpot({ label, height = 'min-h-[100px]' }: { label: string, height?: string }) {
-  return (
-    <div className={`w-full ${height} bg-gradient-to-r from-slate-50 to-slate-100 border border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-1 text-xs font-medium`}>
-      <span className="text-[10px] uppercase tracking-widest font-bold text-slate-300">Advertisement</span>
-      <span className="text-slate-300 text-[10px]">{label}</span>
-    </div>
-  );
+  return <AdSlot label={label} heightClassName={height} />;
 }
 
 export default async function JobDetail(props: { params: Promise<{ id: string }>, searchParams: Promise<{ [key: string]: string | undefined }> }) {
@@ -72,11 +69,11 @@ export default async function JobDetail(props: { params: Promise<{ id: string }>
               <span className="bg-white/15 backdrop-blur-sm border border-white/20 text-white text-xs font-black px-3 py-1 rounded-full">
                 🏛️ {lang === 'ar' ? job.organization : (job.organization_fr || job.organization)}
               </span>
-              <span className="bg-red-500/80 text-white text-xs font-bold px-3 py-1 rounded-full border border-red-400">
-                ⏳ {t.deadline} {job.deadline}
+              <span className={`text-white text-xs font-bold px-3 py-1 rounded-full border ${isExpired(job.deadline) ? 'bg-red-600 border-red-400 animate-pulse' : 'bg-red-500/80 border-red-400'}`}>
+                ⏳ {t.deadline} {isExpired(job.deadline) ? (lang === 'ar' ? 'انتهى الوقت' : 'Expiré') : job.deadline}
               </span>
               <span className="bg-green-500/80 text-white text-xs font-bold px-3 py-1 rounded-full border border-green-400">
-                🎯 {t.posts} {job.posts}
+                🎯 {formatPostsLabel(job.posts, lang)}
               </span>
             </div>
             <h1 className="text-xl md:text-3xl font-black leading-tight">
@@ -108,21 +105,29 @@ export default async function JobDetail(props: { params: Promise<{ id: string }>
 
           {/* Apply CTA */}
           <div className="px-6 md:px-8 pb-8">
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-6 text-center">
-              <p className="text-slate-600 text-sm font-bold mb-4">
-                {lang === 'ar'
-                  ? '⚠️ للتقديم الرسمي توجه إلى الموقع الرسمي لوزارة الوظيفة العمومية'
-                  : '⚠️ Pour postuler officiellement, rendez-vous sur le site officiel'}
+            <div className={`rounded-2xl p-6 text-center border ${isExpired(job.deadline) ? 'bg-red-50 border-red-200' : 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200'}`}>
+              <p className={`text-sm font-bold mb-4 ${isExpired(job.deadline) ? 'text-red-600' : 'text-slate-600'}`}>
+                {isExpired(job.deadline) 
+                  ? (lang === 'ar' ? '🚫 نأسف، لقد انتهى أجل التقديم لهذه المباراة' : '🚫 Désolé, le délai de candidature est expiré')
+                  : (lang === 'ar' ? '⚠️ للتقديم الرسمي توجه إلى الموقع الرسمي لوزارة الوظيفة العمومية' : '⚠️ Pour postuler officiellement, rendez-vous sur le site officiel')}
               </p>
-              <a
-                href={job.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block bg-green-600 hover:bg-green-700 active:scale-95 text-white font-black py-4 px-10 rounded-2xl shadow-lg transition-all text-base"
-              >
-                {t.apply}
-              </a>
-              <p className="mt-4 text-slate-400 text-xs break-all">{job.url}</p>
+              
+              {!isExpired(job.deadline) ? (
+                <a
+                  href={job.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block bg-green-600 hover:bg-green-700 active:scale-95 text-white font-black py-4 px-10 rounded-2xl shadow-lg transition-all text-base"
+                >
+                  {t.apply}
+                </a>
+              ) : (
+                <div className="inline-block bg-slate-300 text-slate-500 font-black py-4 px-10 rounded-2xl cursor-not-allowed text-base">
+                  {lang === 'ar' ? 'انتهت الصلاحية' : 'Expiré'}
+                </div>
+              )}
+              
+              {!isExpired(job.deadline) && <p className="mt-4 text-slate-400 text-xs break-all">{job.url}</p>}
             </div>
           </div>
         </article>

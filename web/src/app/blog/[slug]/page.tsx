@@ -2,15 +2,10 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
+import { AdSlot } from '@/components/AdSlot';
 
-// AdSense placeholder — replace with real <ins> tag when approved
 function AdSpot({ label, height = 'min-h-[90px]' }: { label: string, height?: string }) {
-  return (
-    <div className={`w-full ${height} bg-gradient-to-r from-slate-50 to-slate-100 border border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-1`}>
-      <span className="text-[10px] uppercase tracking-widest font-bold text-slate-300">Advertisement</span>
-      <span className="text-slate-300 text-[10px]">{label}</span>
-    </div>
-  );
+  return <AdSlot label={label} heightClassName={height} />;
 }
 
 export default async function BlogPost(props: { params: Promise<{ slug: string }>, searchParams: Promise<{ [key: string]: string | undefined }> }) {

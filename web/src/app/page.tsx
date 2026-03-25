@@ -3,22 +3,20 @@ import Link from 'next/link';
 import { getDb, Job } from '@/lib/db';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
+import { AdSlot } from '@/components/AdSlot';
+import { isExpired } from '@/lib/date-utils';
+import { formatPostsLabel } from '@/lib/job-utils';
 
-// AdSense placeholder component
 function AdSpot({ label, height = 'min-h-[100px]' }: { label: string, height?: string }) {
-  return (
-    <div className={`w-full ${height} bg-gradient-to-r from-slate-50 to-slate-100 border border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-1 text-slate-400 text-xs font-medium`}>
-      <span className="text-[10px] uppercase tracking-widest font-bold text-slate-300">Advertisement</span>
-      {/* Replace the div below with your real AdSense <ins> tag */}
-      <span className="text-slate-300 text-[10px]">{label}</span>
-    </div>
-  );
+  return <AdSlot label={label} heightClassName={height} />;
 }
 
 export default async function Home(props: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
   const searchParams = await props.searchParams;
   const lang = (searchParams.lang === 'fr' ? 'fr' : 'ar') as 'ar' | 'fr';
   const sector = searchParams.sector || 'all';
+  const page = parseInt(searchParams.page || '1') || 1;
+  const JOBS_PER_PAGE = 12;
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
 
   const ui = {
@@ -40,14 +38,27 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
 
   const t = ui[lang];
   const db = await getDb();
-  const jobs: Job[] = await db.all("SELECT * FROM jobs ORDER BY created_at DESC LIMIT 50");
+  // Fetch more to ensure we have enough active jobs
+  const allJobs: Job[] = await db.all("SELECT * FROM jobs ORDER BY id DESC LIMIT 100");
 
-  const filteredJobs = sector === 'all'
-    ? jobs
-    : jobs.filter(j => {
-        const isPublic = j.organization.includes('وزارة') || j.organization.includes('المكتب') || j.organization.includes('المؤسسة');
+  const activeJobs = allJobs.filter(j => !isExpired(j.deadline));
+  const expiredJobs = allJobs.filter(j => isExpired(j.deadline));
+
+  const jobsToDisplay = sector === 'all'
+    ? activeJobs
+    : activeJobs.filter(j => {
+        const publicKeywords = [
+          'وزارة', 'المكتب', 'المؤسسة', 'المجلس', 'الوكالة', 'الصندوق', 
+          'الأمانة', 'جامعة', 'عكالة', 'محكمة', 'ولاية', 'عمالة', 'جماعة', 
+          'جهة', 'مندوبية', 'إدارة', 'القيادة', 'القوات', 'الدرك', 'الأمن'
+        ];
+        const isPublic = publicKeywords.some(keyword => j.organization.includes(keyword));
         return sector === 'public' ? isPublic : !isPublic;
       });
+
+  const totalJobs = jobsToDisplay.length;
+  const totalPages = Math.ceil(totalJobs / JOBS_PER_PAGE);
+  const paginatedJobs = jobsToDisplay.slice((page - 1) * JOBS_PER_PAGE, page * JOBS_PER_PAGE);
 
   return (
     <div className="min-h-screen font-sans flex flex-col" style={{ background: '#f1f5f9' }} dir={dir}>
@@ -77,7 +88,7 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
           {/* Stats bar */}
           <div className="flex items-center justify-center gap-8 mt-10 pt-8 border-t border-white/10">
             <div className="text-center">
-              <p className="text-2xl font-black text-white">{jobs.length}+</p>
+              <p className="text-2xl font-black text-white">{activeJobs.length}+</p>
               <p className="text-blue-300 text-xs font-bold">{lang === 'ar' ? 'عرض شغل' : 'Offres'}</p>
             </div>
             <div className="w-px h-10 bg-white/20"></div>
@@ -105,17 +116,17 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
         <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="text-xl font-black text-slate-800">{t.latestJobs}</h2>
-            <p className="text-xs text-slate-500 mt-0.5">{filteredJobs.length} {lang === 'ar' ? 'نتيجة' : 'résultats'}</p>
+            <p className="text-xs text-slate-500 mt-0.5">{totalJobs} {lang === 'ar' ? 'نتيجة' : 'résultats'}</p>
           </div>
         </div>
 
-        {filteredJobs.length === 0 ? (
+        {paginatedJobs.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
             <p className="text-slate-400 font-bold text-lg">{t.noJobs}</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-3 pb-10">
-            {filteredJobs.map((job, index) => (
+          <div className="flex flex-col gap-3">
+            {paginatedJobs.map((job: Job, index: number) => (
               <React.Fragment key={job.id}>
 
                 {/* AD SPOT 2 — In-Feed after 4th job */}
@@ -129,10 +140,9 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
 
                 <Link
                   href={`/jobs/${job.id}?lang=${lang}`}
-                  className="group bg-white rounded-2xl border border-slate-200 hover:border-blue-400 hover:shadow-lg transition-all duration-200 flex flex-col md:flex-row overflow-hidden"
+                  className={`group bg-white rounded-2xl border border-slate-200 hover:border-blue-400 hover:shadow-lg transition-all duration-200 flex flex-col md:flex-row overflow-hidden ${isExpired(job.deadline) ? 'opacity-70 grayscale-[0.3]' : ''}`}
                 >
-                  {/* Color strip */}
-                  <div className="w-full md:w-1 h-1 md:h-auto bg-gradient-to-b from-blue-500 to-blue-700 shrink-0 md:rounded-l-2xl rounded-t-2xl"></div>
+                  <div className={`w-full md:w-1 h-1 md:h-auto shrink-0 md:rounded-l-2xl rounded-t-2xl ${isExpired(job.deadline) ? 'bg-slate-400' : 'bg-gradient-to-b from-blue-500 to-blue-700'}`}></div>
 
                   <div className="p-4 md:p-5 flex flex-col md:flex-row gap-3 md:items-center w-full">
                     <div className="flex-grow">
@@ -140,19 +150,19 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
                         <span className="bg-blue-50 text-blue-700 text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wide">
                           {lang === 'ar' ? job.organization : job.organization_fr || job.organization}
                         </span>
-                        <span className="bg-amber-50 text-amber-700 text-[10px] font-bold px-2.5 py-1 rounded-lg">
-                          ⏳ {job.deadline}
+                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg ${isExpired(job.deadline) ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>
+                          ⏳ {isExpired(job.deadline) ? (lang === 'ar' ? 'انتهى الوقت' : 'Expiré') : job.deadline}
                         </span>
                         <span className="bg-green-50 text-green-700 text-[10px] font-bold px-2.5 py-1 rounded-lg">
-                          🎯 {job.posts} {lang === 'ar' ? 'منصب' : 'postes'}
+                          🎯 {formatPostsLabel(job.posts, lang)}
                         </span>
                       </div>
-                      <h3 className="text-base md:text-lg font-black text-slate-900 group-hover:text-blue-700 leading-snug transition-colors">
+                      <h3 className={`text-base md:text-lg font-black leading-snug transition-colors ${isExpired(job.deadline) ? 'text-slate-500' : 'text-slate-900 group-hover:text-blue-700'}`}>
                         {lang === 'ar' ? job.title : job.title_fr || job.title}
                       </h3>
                     </div>
                     <div className="shrink-0">
-                      <span className="bg-blue-600 group-hover:bg-blue-700 text-white font-bold text-sm py-2 px-5 rounded-xl transition-colors inline-block">
+                      <span className={`font-bold text-sm py-2 px-5 rounded-xl transition-colors inline-block ${isExpired(job.deadline) ? 'bg-slate-100 text-slate-400' : 'bg-blue-600 group-hover:bg-blue-700 text-white'}`}>
                         {lang === 'ar' ? 'التفاصيل ←' : 'Voir →'}
                       </span>
                     </div>
@@ -161,6 +171,35 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
 
               </React.Fragment>
             ))}
+          </div>
+        )}
+
+        {/* ═══════════════ PAGINATION ═══════════════ */}
+        {totalPages > 1 && (
+          <div className="flex flex-col items-center gap-4 mt-8 pb-10">
+            <div className="flex items-center gap-2">
+              {page > 1 && (
+                <Link
+                  href={`/?lang=${lang}&sector=${sector}&page=${page - 1}`}
+                  className="bg-white border border-slate-200 text-slate-700 font-bold py-2.5 px-6 rounded-2xl hover:bg-slate-50 transition-colors shadow-sm"
+                >
+                  {lang === 'ar' ? '← السابق' : '← Précédent'}
+                </Link>
+              )}
+              
+              <div className="bg-white border border-slate-100 py-2.5 px-6 rounded-2xl font-black text-blue-700 shadow-sm text-sm">
+                {lang === 'ar' ? `صفحة ${page} من ${totalPages}` : `Page ${page} sur ${totalPages}`}
+              </div>
+
+              {page < totalPages && (
+                <Link
+                  href={`/?lang=${lang}&sector=${sector}&page=${page + 1}`}
+                  className="bg-white border border-slate-200 text-slate-700 font-bold py-2.5 px-6 rounded-2xl hover:bg-slate-50 transition-colors shadow-sm"
+                >
+                  {lang === 'ar' ? 'التالي →' : 'Suivant →'}
+                </Link>
+              )}
+            </div>
           </div>
         )}
       </main>
