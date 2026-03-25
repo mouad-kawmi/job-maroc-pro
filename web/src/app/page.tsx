@@ -15,6 +15,7 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
   const searchParams = await props.searchParams;
   const lang = (searchParams.lang === 'fr' ? 'fr' : 'ar') as 'ar' | 'fr';
   const sector = searchParams.sector || 'all';
+  const status = searchParams.status || 'active'; // 'active' or 'expired'
   const page = parseInt(searchParams.page || '1') || 1;
   const JOBS_PER_PAGE = 12;
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
@@ -44,9 +45,11 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
   const activeJobs = allJobs.filter(j => !isExpired(j.deadline));
   const expiredJobs = allJobs.filter(j => isExpired(j.deadline));
 
+  const baseJobs = status === 'expired' ? expiredJobs : activeJobs;
+
   const jobsToDisplay = sector === 'all'
-    ? allJobs
-    : allJobs.filter(j => {
+    ? baseJobs
+    : baseJobs.filter(j => {
         const publicKeywords = [
           'وزارة', 'المكتب', 'المؤسسة', 'المجلس', 'الوكالة', 'الصندوق', 
           'الأمانة', 'جامعة', 'عكالة', 'محكمة', 'ولاية', 'عمالة', 'جماعة', 
@@ -113,10 +116,26 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
       {/* ═══════════════ JOB LISTINGS ═══════════════ */}
       <main className="container mx-auto px-4 max-w-5xl mt-6 flex-grow">
         {/* Section header */}
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-5 gap-4">
           <div>
-            <h2 className="text-xl font-black text-slate-800">{t.latestJobs}</h2>
+            <h2 className="text-xl font-black text-slate-800">{status === 'expired' ? (lang === 'ar' ? 'مباريات منتهية ونتائج' : 'Concours Expirés et Résultats') : t.latestJobs}</h2>
             <p className="text-xs text-slate-500 mt-0.5">{totalJobs} {lang === 'ar' ? 'نتيجة' : 'résultats'}</p>
+          </div>
+          
+          {/* Tabs */}
+          <div className="flex bg-slate-100 p-1 rounded-xl">
+            <Link
+              href={`/?lang=${lang}&sector=${sector}&status=active`}
+              className={`px-4 py-2 font-bold text-sm rounded-lg transition-colors ${status === 'active' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              {lang === 'ar' ? 'مباريات نشطة 🟢' : 'Actifs 🟢'}
+            </Link>
+            <Link
+              href={`/?lang=${lang}&sector=${sector}&status=expired`}
+              className={`px-4 py-2 font-bold text-sm rounded-lg transition-colors ${status === 'expired' ? 'bg-white text-amber-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              {lang === 'ar' ? 'منتهية / نتائج ⏳' : 'Expirés / Résultats ⏳'}
+            </Link>
           </div>
         </div>
 
@@ -180,7 +199,7 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
             <div className="flex items-center gap-2">
               {page > 1 && (
                 <Link
-                  href={`/?lang=${lang}&sector=${sector}&page=${page - 1}`}
+                  href={`/?lang=${lang}&sector=${sector}&status=${status}&page=${page - 1}`}
                   className="bg-white border border-slate-200 text-slate-700 font-bold py-2.5 px-6 rounded-2xl hover:bg-slate-50 transition-colors shadow-sm"
                 >
                   {lang === 'ar' ? '← السابق' : '← Précédent'}
@@ -193,7 +212,7 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
 
               {page < totalPages && (
                 <Link
-                  href={`/?lang=${lang}&sector=${sector}&page=${page + 1}`}
+                  href={`/?lang=${lang}&sector=${sector}&status=${status}&page=${page + 1}`}
                   className="bg-white border border-slate-200 text-slate-700 font-bold py-2.5 px-6 rounded-2xl hover:bg-slate-50 transition-colors shadow-sm"
                 >
                   {lang === 'ar' ? 'التالي →' : 'Suivant →'}
