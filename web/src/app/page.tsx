@@ -39,14 +39,14 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
   const t = ui[lang];
   const db = await getDb();
   // Fetch more to ensure we have enough active jobs
-  const allJobs: Job[] = await db.all("SELECT * FROM jobs ORDER BY id DESC LIMIT 100");
+  const allJobs: Job[] = await db.all("SELECT * FROM jobs ORDER BY id DESC LIMIT 500");
 
   const activeJobs = allJobs.filter(j => !isExpired(j.deadline));
   const expiredJobs = allJobs.filter(j => isExpired(j.deadline));
 
   const jobsToDisplay = sector === 'all'
-    ? activeJobs
-    : activeJobs.filter(j => {
+    ? allJobs
+    : allJobs.filter(j => {
         const publicKeywords = [
           'وزارة', 'المكتب', 'المؤسسة', 'المجلس', 'الوكالة', 'الصندوق', 
           'الأمانة', 'جامعة', 'عكالة', 'محكمة', 'ولاية', 'عمالة', 'جماعة', 
