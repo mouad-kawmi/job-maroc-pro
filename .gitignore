@@ -31,8 +31,10 @@ test_key.py
 fix_db.py
 debug_models.py
 
-# Database files (local only — web/jobs.db is committed for Vercel)
-jobs.db
+# Database files (local root only — web/jobs.db MUST be committed for Vercel)
+/jobs.db
 *.sqlite
+# Explicitly allow the web database used by Vercel
+!web/jobs.db
 latest_jobs.json
 rewritten_jobs.json
