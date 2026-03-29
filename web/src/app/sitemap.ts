@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next';
 import { getDb } from '@/lib/db';
 import { listBlogPosts } from '@/lib/content';
+import { STATIC_BLOG_CARDS } from '@/lib/blog-static';
 import { listJobGuides } from '@/lib/job-guides';
 import { siteConfig } from '@/lib/site-config';
 
@@ -15,26 +16,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  const staticBlogArticles = [
-    { slug: 'job-search-ads', date: '2025-03-22' },
-    { slug: 'cv-writing', date: '2025-03-21' },
-    { slug: 'interview-tips', date: '2025-03-20' },
-    { slug: 'sectors-2025', date: '2025-03-19' },
-    { slug: 'public-concours', date: '2025-03-18' },
-    { slug: 'motivation-letter', date: '2025-03-17' },
-    { slug: 'linkedin-tips', date: '2025-03-16' },
-    { slug: 'demand-jobs', date: '2025-03-15' },
-    { slug: 'employee-rights', date: '2025-03-14' },
-    { slug: 'anapec-services', date: '2025-03-13' },
-  ];
-
   const dynamicBlogArticles = await listBlogPosts();
   const allBlogArticles = [
     ...dynamicBlogArticles.map((post) => ({
       slug: post.slug,
       date: post.date,
     })),
-    ...staticBlogArticles,
+    ...STATIC_BLOG_CARDS.map((article) => ({
+      slug: article.slug,
+      date: article.date,
+    })),
   ].filter(
     (article, index, array) =>
       array.findIndex((candidate) => candidate.slug === article.slug) === index,

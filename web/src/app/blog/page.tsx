@@ -4,6 +4,7 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { AdSlot } from '@/components/AdSlot';
 import { listBlogPosts } from '@/lib/content';
+import { STATIC_BLOG_CARDS, type StaticBlogCard } from '@/lib/blog-static';
 
 function AdSpot({
   label,
@@ -22,156 +23,20 @@ const TAG_COLORS: Record<string, string> = {
   search: 'bg-green-50 text-green-700',
   linkedin: 'bg-sky-50 text-sky-700',
   rights: 'bg-red-50 text-red-700',
+  safety: 'bg-rose-50 text-rose-700',
+  contract: 'bg-indigo-50 text-indigo-700',
   tips: 'bg-yellow-50 text-yellow-700',
   default: 'bg-slate-100 text-slate-600',
 };
+
 const ARTICLES_PER_PAGE = 9;
 
-type BlogCard = {
-  slug: string;
-  date: string;
-  tags: string[];
-  title: { ar: string; fr: string };
-  excerpt: { ar: string; fr: string };
-};
-
-const STATIC_ARTICLES: BlogCard[] = [
-  {
-    slug: 'job-search-ads',
-    date: '2025-03-22',
-    tags: ['search', 'tips'],
-    title: {
-      ar: 'كيف تجد إعلانات التوظيف - JOB MAROC PRO',
-      fr: "Comment trouver les annonces d'emploi",
-    },
-    excerpt: {
-      ar: 'دليل شامل للعثور على أفضل عروض العمل في المغرب',
-      fr: "Guide complet pour trouver les meilleures offres d'emploi",
-    },
-  },
-  {
-    slug: 'cv-writing',
-    date: '2025-03-21',
-    tags: ['cv', 'tips'],
-    title: {
-      ar: 'السيرة الذاتية - CV',
-      fr: 'Le Curriculum Vitae',
-    },
-    excerpt: {
-      ar: 'كيف تكتب سيرة ذاتية احترافية تفتح أمامك الأبواب',
-      fr: 'Comment rediger un CV professionnel qui ouvre des portes',
-    },
-  },
-  {
-    slug: 'interview-tips',
-    date: '2025-03-20',
-    tags: ['interview'],
-    title: {
-      ar: 'المقابلة الشفهية',
-      fr: "L'entretien d'embauche",
-    },
-    excerpt: {
-      ar: 'نصائح ذهبية للنجاح في مقابلة العمل',
-      fr: 'Conseils cles pour reussir votre entretien',
-    },
-  },
-  {
-    slug: 'sectors-2025',
-    date: '2025-03-19',
-    tags: ['search'],
-    title: {
-      ar: 'قطاعات التشغيل 2025',
-      fr: "Secteurs de l'emploi 2025",
-    },
-    excerpt: {
-      ar: 'أهم القطاعات التي توفر فرص عمل في المغرب',
-      fr: 'Les secteurs qui recrutent le plus au Maroc',
-    },
-  },
-  {
-    slug: 'public-concours',
-    date: '2025-03-18',
-    tags: ['public'],
-    title: {
-      ar: 'مباراة الوظيفة العمومية',
-      fr: 'Concours de la fonction publique',
-    },
-    excerpt: {
-      ar: 'كل ما تحتاج معرفته عن المباريات العمومية',
-      fr: "Tout ce qu'il faut savoir sur les concours publics",
-    },
-  },
-  {
-    slug: 'motivation-letter',
-    date: '2025-03-17',
-    tags: ['cv', 'tips'],
-    title: {
-      ar: 'رسالة التحفيز',
-      fr: 'Lettre de motivation',
-    },
-    excerpt: {
-      ar: 'كيف تكتب رسالة تحفيز تجذب أصحاب العمل',
-      fr: "Comment rediger une lettre qui attire l'attention",
-    },
-  },
-  {
-    slug: 'linkedin-tips',
-    date: '2025-03-16',
-    tags: ['linkedin'],
-    title: {
-      ar: 'نصائح LinkedIn',
-      fr: 'Conseils LinkedIn',
-    },
-    excerpt: {
-      ar: 'كيف تبني حضورا قويا على لينكدإن',
-      fr: 'Comment batir une presence forte sur LinkedIn',
-    },
-  },
-  {
-    slug: 'demand-jobs',
-    date: '2025-03-15',
-    tags: ['search'],
-    title: {
-      ar: 'أكثر المناصب طلبا 2025',
-      fr: 'Metiers les plus demandes 2025',
-    },
-    excerpt: {
-      ar: 'تعرف على المهن الأكثر طلبا في سوق العمل المغربي',
-      fr: 'Decouvrez les metiers en forte demande au Maroc',
-    },
-  },
-  {
-    slug: 'employee-rights',
-    date: '2025-03-14',
-    tags: ['rights'],
-    title: {
-      ar: 'حقوق الموظف - SMIG/CNSS',
-      fr: "Droits de l'employe",
-    },
-    excerpt: {
-      ar: 'حقوقك كموظف وما يجب أن تعرفه قبل التوقيع',
-      fr: "Vos droits en tant qu'employe au Maroc",
-    },
-  },
-  {
-    slug: 'anapec-services',
-    date: '2025-03-13',
-    tags: ['search'],
-    title: {
-      ar: 'خدمات ANAPEC',
-      fr: "Services de l'ANAPEC",
-    },
-    excerpt: {
-      ar: 'كيف تستفيد من خدمات وكالة التشغيل ANAPEC',
-      fr: "Comment profiter des services de l'ANAPEC",
-    },
-  },
-];
+type BlogCard = StaticBlogCard;
 
 function mergeArticles(dynamicArticles: BlogCard[]): BlogCard[] {
   const merged = new Map<string, BlogCard>();
 
-  [...dynamicArticles, ...STATIC_ARTICLES].forEach((article) => {
+  [...dynamicArticles, ...STATIC_BLOG_CARDS].forEach((article) => {
     if (!merged.has(article.slug)) {
       merged.set(article.slug, article);
     }
@@ -189,6 +54,7 @@ export default async function Blog(props: {
   const lang = (searchParams.lang === 'fr' ? 'fr' : 'ar') as 'ar' | 'fr';
   const page = Math.max(1, parseInt(searchParams.page || '1', 10) || 1);
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
+
   const dynamicArticles = (await listBlogPosts()).map<BlogCard>((post) => ({
     slug: post.slug,
     date: post.date,
@@ -202,6 +68,7 @@ export default async function Blog(props: {
       fr: post.excerptFr,
     },
   }));
+
   const articles = mergeArticles(dynamicArticles);
   const totalPages = Math.max(1, Math.ceil(articles.length / ARTICLES_PER_PAGE));
   const currentPage = Math.min(page, totalPages);
@@ -213,33 +80,28 @@ export default async function Blog(props: {
   const t = {
     ar: {
       title: 'مدونة التوظيف في المغرب',
-      subtitle: 'نصائح مهنية، أدلة عملية، وتحليلات سوق الشغل',
+      subtitle: 'نصائح مهنية، دلائل عملية، ومقالات أصلية تساعدك في البحث عن العمل',
       readMore: 'اقرأ المقال',
     },
     fr: {
       title: 'Blog Emploi au Maroc',
-      subtitle: 'Conseils pro, guides pratiques et analyses du marche',
+      subtitle:
+        'Conseils pro, guides pratiques et articles originaux pour mieux chercher un emploi',
       readMore: "Lire l'article",
     },
   }[lang];
-  const pagination = lang === 'fr'
-    ? {
-        pageLabel: `Page ${currentPage} sur ${totalPages}`,
-        previousPage: 'Precedent',
-        nextPage: 'Suivant',
-      }
-    : {
-        pageLabel: `ØµÙØ­Ø© ${currentPage} Ù…Ù† ${totalPages}`,
-        previousPage: 'Ø§Ù„Ø³Ø§Ø¨Ù‚',
-        nextPage: 'Ø§Ù„ØªØ§Ù„ÙŠ',
-      };
-  const safePagination =
+
+  const pagination =
     lang === 'fr'
-      ? pagination
+      ? {
+          pageLabel: `Page ${currentPage} sur ${totalPages}`,
+          previousPage: 'Precedent',
+          nextPage: 'Suivant',
+        }
       : {
-          pageLabel: `\u0635\u0641\u062d\u0629 ${currentPage} \u0645\u0646 ${totalPages}`,
-          previousPage: '\u0627\u0644\u0633\u0627\u0628\u0642',
-          nextPage: '\u0627\u0644\u062a\u0627\u0644\u064a',
+          pageLabel: `صفحة ${currentPage} من ${totalPages}`,
+          previousPage: 'السابق',
+          nextPage: 'التالي',
         };
 
   return (
@@ -316,18 +178,18 @@ export default async function Blog(props: {
                 href={`/blog?lang=${lang}&page=${currentPage - 1}`}
                 className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-100"
               >
-                {safePagination.previousPage}
+                {pagination.previousPage}
               </Link>
             )}
             <div className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-black text-white">
-              {safePagination.pageLabel}
+              {pagination.pageLabel}
             </div>
             {currentPage < totalPages && (
               <Link
                 href={`/blog?lang=${lang}&page=${currentPage + 1}`}
                 className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-100"
               >
-                {safePagination.nextPage}
+                {pagination.nextPage}
               </Link>
             )}
           </div>

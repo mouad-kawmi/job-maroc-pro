@@ -137,4 +137,82 @@ export const STATIC_BLOG_CARDS: StaticBlogCard[] = [
       fr: "Comment profiter des services de l'ANAPEC",
     },
   },
+  {
+    slug: 'read-job-offer',
+    date: '2026-03-29',
+    tags: ['search', 'tips'],
+    title: {
+      ar: 'كيف تقرأ إعلان عمل قبل أن ترسل ترشيحك',
+      fr: "Comment lire une offre d'emploi avant de candidater",
+    },
+    excerpt: {
+      ar: 'خطوات بسيطة لفهم الشروط الحقيقية داخل الإعلان وتفادي ضياع الوقت في عروض لا تناسبك.',
+      fr: "Les points a verifier dans une annonce pour comprendre rapidement si le poste vous correspond vraiment.",
+    },
+  },
+  {
+    slug: 'verify-job-scam',
+    date: '2026-03-28',
+    tags: ['safety', 'tips'],
+    title: {
+      ar: 'كيف تتحقق أن عرض العمل ليس احتيالا',
+      fr: "Comment verifier qu'une offre n'est pas une arnaque",
+    },
+    excerpt: {
+      ar: 'علامات مهمة تساعدك على التمييز بين الفرصة الجدية والإعلان المشبوه قبل مشاركة معلوماتك الشخصية.',
+      fr: "Les signaux qui permettent de distinguer une vraie opportunite d'une annonce douteuse avant d'envoyer vos donnees.",
+    },
+  },
+  {
+    slug: 'application-mistakes',
+    date: '2026-03-27',
+    tags: ['tips'],
+    title: {
+      ar: 'أخطاء شائعة تضعف طلب العمل حتى لو كانت الفرصة مناسبة',
+      fr: 'Les erreurs qui affaiblissent une candidature pourtant pertinente',
+    },
+    excerpt: {
+      ar: 'أخطاء بسيطة في الملف أو طريقة التقديم قد تجعل المشغل يتجاوز طلبك بسرعة.',
+      fr: "Des erreurs simples dans le dossier ou dans la facon de postuler peuvent suffire a faire perdre une bonne opportunite.",
+    },
+  },
+  {
+    slug: 'cdi-cdd-stage-difference',
+    date: '2026-03-26',
+    tags: ['contract', 'rights'],
+    title: {
+      ar: 'ما الفرق بين CDI و CDD و Stage في سوق الشغل',
+      fr: 'Comprendre la difference entre CDI, CDD et stage',
+    },
+    excerpt: {
+      ar: 'فهم نوع العقد يساعدك على تقييم الاستقرار، الحقوق، والأهداف المناسبة لكل مرحلة مهنية.',
+      fr: "Comprendre le type de contrat aide a mieux evaluer la stabilite, les droits et l'objectif de chaque opportunite.",
+    },
+  },
+  {
+    slug: 'cv-without-experience',
+    date: '2026-03-25',
+    tags: ['cv', 'tips'],
+    title: {
+      ar: 'كيف تكتب CV مقنعا حتى إذا لم تكن لديك تجربة كبيرة',
+      fr: "Comment faire un CV convaincant meme sans grande experience",
+    },
+    excerpt: {
+      ar: 'طرق عملية لإبراز التكوين، المشاريع، والتداريب عندما تكون خبرتك المهنية ما زالت محدودة.',
+      fr: "Des pistes concretes pour valoriser votre formation, vos projets et vos stages lorsque votre experience reste limitee.",
+    },
+  },
+  {
+    slug: 'concours-preparation-plan',
+    date: '2026-03-24',
+    tags: ['public', 'tips'],
+    title: {
+      ar: 'خطة عملية للتحضير لمباريات التوظيف بدون تشتت',
+      fr: 'Plan pratique pour preparer un concours sans se disperser',
+    },
+    excerpt: {
+      ar: 'برنامج واضح يساعدك على تنظيم المراجعة والوثائق والمتابعة حتى لا يتحول التحضير إلى ضغط عشوائي.',
+      fr: "Une methode simple pour organiser la revision, les documents et le suivi du concours sans travailler dans le flou.",
+    },
+  },
 ];

@@ -283,6 +283,168 @@ function getStaticBlogArticle(slug: string) {
                 </ul>
             `
         }
+    },
+    'read-job-offer': {
+        title: { ar: 'كيف تقرأ إعلان عمل قبل أن ترسل ترشيحك', fr: "Comment lire une offre d'emploi avant de candidater" },
+        content: {
+            ar: `
+                <p>كثير من الباحثين عن العمل يرسلون نفس الملف مباشرة بعد رؤية العنوان فقط، ثم يكتشفون لاحقا أن الشروط لا تناسبهم. قراءة الإعلان بشكل ذكي توفر وقتك وتجعلك تركز على الفرص الأقرب لملفك.</p>
+                <h3>1. ابدأ بعنوان المنصب ثم الجهة المشغلة</h3>
+                <p>العنوان وحده لا يكفي. راجع أيضا اسم المؤسسة أو الشركة، لأن نفس المسمى قد يختلف من جهة إلى أخرى من حيث المهام، الاستقرار، وآفاق التطور.</p>
+                <h3>2. دقق في الشروط قبل الوثائق</h3>
+                <p>قبل أن تجهز CV أو رسالة التحفيز، انظر إلى الشهادة المطلوبة، التخصص، التجربة، اللغات، المدينة، وطريقة التقديم. إذا كان الشرط الحاسم غير متوفر عندك، فمن الأفضل عدم تضييع الجهد في ملف غير مناسب.</p>
+                <h3>3. افهم ما الذي يبحث عنه المشغل فعلا</h3>
+                <p>ركز على الكلمات المتكررة داخل الإعلان: التنظيم، التواصل، الخبرة التقنية، التنقل، أو العمل تحت الضغط. هذه الكلمات تعطيك صورة واضحة عمّا يجب إبرازُه في ملفك.</p>
+                <h3>4. راجع طريقة التقديم بدقة</h3>
+                <p>بعض العروض تطلب إرسالا عبر البريد الإلكتروني، وبعضها عبر منصة، وبعضها بملف ورقي. الخطأ في طريقة الإرسال قد يؤدي إلى رفض الملف حتى لو كان ترشيحك مناسبا.</p>
+            `,
+            fr: `
+                <p>Beaucoup de candidats envoient leur dossier apres avoir seulement lu le titre de l'offre. Une lecture attentive permet pourtant de mieux cibler les postes adaptes a votre profil.</p>
+                <h3>1. Commencer par le poste et l'employeur</h3>
+                <p>Le titre seul ne suffit pas. Regardez aussi l'entreprise ou l'organisme, car un meme intitule peut cacher des missions tres differentes.</p>
+                <h3>2. Verifier les conditions avant les documents</h3>
+                <p>Diplome, specialite, experience, langues, ville et mode de candidature doivent etre compris avant meme d'ouvrir votre CV.</p>
+                <h3>3. Reperer les vrais criteres du recruteur</h3>
+                <p>Les mots qui reviennent souvent dans l'annonce montrent ce qu'il faut mettre en avant dans votre candidature.</p>
+                <h3>4. Respecter la methode de candidature</h3>
+                <p>Une bonne candidature peut etre ecartee si elle est envoyee au mauvais format, a la mauvaise adresse ou sans les pieces demandees.</p>
+            `
+        }
+    },
+    'verify-job-scam': {
+        title: { ar: 'كيف تتحقق أن عرض العمل ليس احتيالا', fr: "Comment verifier qu'une offre n'est pas une arnaque" },
+        content: {
+            ar: `
+                <p>مع كثرة الإعلانات المنتشرة في الشبكات الاجتماعية والمجموعات، أصبح من المهم التحقق من جدية العرض قبل إرسال الوثائق أو المعلومات الشخصية. الحذر لا يعني الشك في كل شيء، بل يعني حماية نفسك من الإعلانات المشبوهة.</p>
+                <h3>1. ابحث عن الجهة المعلنة</h3>
+                <p>إذا لم تجد أثرا واضحا للشركة أو المؤسسة في Google أو LinkedIn أو موقع رسمي، فهذه أول إشارة تستحق الانتباه.</p>
+                <h3>2. انتبه للوعود المبالغ فيها</h3>
+                <p>العرض الذي يعد براتب مرتفع جدا بدون شروط واضحة، أو يوظف بسرعة غير منطقية، أو لا يشرح المهام بدقة، قد يكون محاولة لجذب المرشحين فقط.</p>
+                <h3>3. لا تشارك معلومات حساسة في البداية</h3>
+                <p>لا أحد يحتاج في أول تواصل إلى كلمة مرورك أو معلوماتك البنكية أو أي مبلغ مالي. إذا طُلب منك أداء رسوم أو مشاركة معطيات حساسة بسرعة، توقف وتحقق أولا.</p>
+                <h3>4. قارن بين الإعلان والرابط الرسمي</h3>
+                <p>إذا كان الإعلان يحيل على رابط رسمي، اقرأ المصدر بنفسك. أحيانا يتم نسخ جزء من إعلان حقيقي ثم تغييره بطريقة مضللة داخل منشورات غير موثوقة.</p>
+            `,
+            fr: `
+                <p>Avec la multiplication des annonces partagees sur les reseaux sociaux, il est essentiel de verifier qu'une offre est serieuse avant d'envoyer son dossier.</p>
+                <h3>1. Chercher des traces de l'employeur</h3>
+                <p>Une entreprise ou un organisme serieux laisse en general une presence visible: site web, page LinkedIn ou activite identifiable.</p>
+                <h3>2. Se mefier des promesses trop faciles</h3>
+                <p>Un salaire tres eleve sans criteres clairs, un recrutement ultra rapide ou un poste flou sont des signaux a prendre avec prudence.</p>
+                <h3>3. Proteger ses donnees personnelles</h3>
+                <p>Des le premier contact, personne ne devrait vous demander un paiement, vos codes ou des informations bancaires.</p>
+                <h3>4. Comparer avec la source officielle</h3>
+                <p>Quand un lien officiel est mentionne, lisez-le vous-meme pour voir si l'information est coherente avec l'annonce partagee.</p>
+            `
+        }
+    },
+    'application-mistakes': {
+        title: { ar: 'أخطاء شائعة تضعف طلب العمل حتى لو كانت الفرصة مناسبة', fr: 'Les erreurs qui affaiblissent une candidature pourtant pertinente' },
+        content: {
+            ar: `
+                <p>أحيانا يكون المنصب مناسبا تماما، لكن طريقة التقديم تجعل الملف يضيع وسط باقي الترشيحات. التفاصيل الصغيرة تصنع فرقا كبيرا عندما تكون المنافسة قوية.</p>
+                <h3>1. إرسال نفس الملف لكل العروض</h3>
+                <p>المشغل يلاحظ بسرعة عندما يكون CV عاما جدا. الأفضل هو تعديل الملخص والمهارات والتجارب البارزة حتى تتماشى مع طبيعة المنصب.</p>
+                <h3>2. إهمال عنوان البريد واسم الملف</h3>
+                <p>ملف باسم vague مثل <strong>cv-final-new.pdf</strong> أو بريد إلكتروني غير مهني يعطي انطباعا ضعيفا.</p>
+                <h3>3. نسيان الوثائق أو التعليمات</h3>
+                <p>بعض العروض تطلب رسالة تحفيزية، أو موضوعا محددا في البريد، أو وثائق إضافية. تجاهل هذه التفاصيل يجعل الملف يبدو غير دقيق.</p>
+                <h3>4. التسرع قبل المراجعة الأخيرة</h3>
+                <p>راجع الأسماء، التواريخ، أرقام الهاتف، والروابط قبل الإرسال. خطأ صغير في المعلومة قد يقطع التواصل معك أو يضعف الثقة في ملفك.</p>
+            `,
+            fr: `
+                <p>Il arrive qu'un poste corresponde parfaitement a votre profil, mais que la candidature perde de sa force a cause de details evitables.</p>
+                <h3>1. Envoyer le meme dossier partout</h3>
+                <p>Un CV trop generique donne l'impression que la candidature n'est pas ciblee.</p>
+                <h3>2. Negliger l'email et le nom du fichier</h3>
+                <p>Une adresse peu professionnelle ou un document mal nomme renvoient une image moins serieuse.</p>
+                <h3>3. Oublier les consignes</h3>
+                <p>Objet du mail, pieces jointes, format demande: ce sont souvent des details qui comptent dans le tri initial.</p>
+                <h3>4. Ne pas relire avant l'envoi</h3>
+                <p>Une derniere verification des dates, du telephone et des fautes peut eviter une mauvaise impression des les premieres secondes.</p>
+            `
+        }
+    },
+    'cdi-cdd-stage-difference': {
+        title: { ar: 'ما الفرق بين CDI و CDD و Stage في سوق الشغل', fr: 'Comprendre la difference entre CDI, CDD et stage' },
+        content: {
+            ar: `
+                <p>نوع العقد ليس تفصيلا ثانويا. قبل قبول أي عرض، من المهم أن تعرف ماذا يعني كل نوع من حيث الاستقرار، التعلم، والحقوق الأساسية.</p>
+                <h3>1. CDI: الاستقرار على المدى الطويل</h3>
+                <p>عقد CDI غالبا يمنحك رؤية أوضح للمستقبل المهني، ويكون مناسبا لمن يبحث عن استقرار أكبر داخل الشركة.</p>
+                <h3>2. CDD: فرصة محددة بمدة أو مشروع</h3>
+                <p>عقد CDD قد يكون جيدا لاكتساب تجربة أو دخول شركة مهمة، لكنه يبقى محدودا زمنيا، لذلك يجب معرفة المدة وإمكانية التجديد.</p>
+                <h3>3. Stage: التعلم قبل كل شيء</h3>
+                <p>التدريب مهم جدا في بداية المسار، لكن يجب أن يكون واضحا من حيث المهام، التأطير، والتعويض إن وجد.</p>
+                <h3>4. كيف تختار بين هذه الصيغ؟</h3>
+                <p>اسأل نفسك: هل أحتاج دخلا مستقرا الآن؟ هل أبحث عن أول تجربة؟ هل أريد دخول قطاع معين بسرعة؟</p>
+            `,
+            fr: `
+                <p>Le type de contrat n'est pas un detail. Avant d'accepter une offre, il faut comprendre ce que chaque formule implique pour votre stabilite et votre progression.</p>
+                <h3>1. Le CDI</h3>
+                <p>Il correspond le plus souvent a une relation durable et offre une meilleure visibilite sur le long terme.</p>
+                <h3>2. Le CDD</h3>
+                <p>Il peut etre utile pour entrer dans une entreprise ou gagner rapidement en experience, mais sa duree reste limitee.</p>
+                <h3>3. Le stage</h3>
+                <p>Le stage est surtout un cadre d'apprentissage. Il doit etre clair, encadre et utile pour developper de vraies competences.</p>
+                <h3>4. Le bon choix depend de votre moment professionnel</h3>
+                <p>Vos besoins immediats et vos objectifs a moyen terme doivent guider votre lecture de l'offre.</p>
+            `
+        }
+    },
+    'cv-without-experience': {
+        title: { ar: 'كيف تكتب CV مقنعا حتى إذا لم تكن لديك تجربة كبيرة', fr: 'Comment faire un CV convaincant meme sans grande experience' },
+        content: {
+            ar: `
+                <p>غياب تجربة طويلة لا يعني أن ملفك ضعيف. المشغل قد يختار مرشحا في بداية المسار إذا وجد وضوحا في المهارات، الجدية، وإشارات حقيقية على القابلية للتعلم.</p>
+                <h3>1. ابدأ بملخص مهني صغير</h3>
+                <p>في ثلاثة أسطر فقط، قدم نفسك بوضوح: تخصصك، ما تبحث عنه، وما الذي يمكنك تقديمه.</p>
+                <h3>2. أبرز المشاريع والتداريب</h3>
+                <p>إذا لم يكن لديك تاريخ مهني طويل، فالمشاريع الدراسية، الأعمال الحرة، التداريب، والأنشطة الجمعوية يمكن أن تتحول إلى عناصر قوية داخل CV.</p>
+                <h3>3. اشرح المهارات بدل سردها فقط</h3>
+                <p>لا تكتب "التواصل" أو "Excel" فقط. حاول ربط المهارة بسياق عملي أو دراسي واضح.</p>
+                <h3>4. اجعل الشكل نظيفا وبسيطا</h3>
+                <p>CV واضحة ومنظمة أفضل من وثيقة مليئة بالألوان والعناصر غير الضرورية.</p>
+            `,
+            fr: `
+                <p>Ne pas avoir une longue experience ne veut pas dire ne rien avoir a montrer. Un recruteur peut etre convaincu par un profil debutant bien presente.</p>
+                <h3>1. Ajouter un petit resume</h3>
+                <p>Trois lignes bien ecrites peuvent expliquer votre formation, votre objectif et le type de poste que vous visez.</p>
+                <h3>2. Mettre en avant projets et stages</h3>
+                <p>Les projets scolaires, les stages et les experiences personnelles utiles ont leur place dans un CV debutant.</p>
+                <h3>3. Donner du contexte aux competences</h3>
+                <p>Il vaut mieux expliquer comment vous avez utilise une competence plutot que d'en aligner une longue liste sans preuve.</p>
+                <h3>4. Soigner la lisibilite</h3>
+                <p>Un CV clair, simple et bien structure inspire plus confiance qu'un document surcharge.</p>
+            `
+        }
+    },
+    'concours-preparation-plan': {
+        title: { ar: 'خطة عملية للتحضير لمباريات التوظيف بدون تشتت', fr: 'Plan pratique pour preparer un concours sans se disperser' },
+        content: {
+            ar: `
+                <p>التحضير للمباريات يصبح متعبا عندما يكون عشوائيا. الحل ليس في مراجعة كل شيء دفعة واحدة، بل في بناء خطة بسيطة تحافظ على الاستمرارية.</p>
+                <h3>1. حدد نوع المباراة والمواد الأساسية</h3>
+                <p>ابدأ بتحديد الجهة المعنية، نوع المنصب، والمواضيع الأكثر تكرارا. هذا يساعدك على ترتيب الأولويات.</p>
+                <h3>2. قسم التحضير إلى أسابيع قصيرة</h3>
+                <p>خصص لكل أسبوع هدفا واحدا واضحا: فهم محور، تلخيص قانون، أو حل نماذج.</p>
+                <h3>3. لا تنس الملف الإداري</h3>
+                <p>كثير من المرشحين يركزون على المراجعة وينسون الوثائق، التصديق، أو المنصة. التحضير الجيد يجمع بين المعرفة والتنظيم.</p>
+                <h3>4. درب نفسك على التوقيت</h3>
+                <p>حل نماذج تحت ضغط زمني يجعلك أقرب لظروف المباراة الحقيقية ويكشف نقاط الضعف قبل يوم الامتحان.</p>
+            `,
+            fr: `
+                <p>La preparation d'un concours devient vite fatigante lorsqu'elle reste floue. Une methode simple permet au contraire de progresser avec plus de regularite.</p>
+                <h3>1. Identifier le type de concours</h3>
+                <p>Avant de reviser, il faut savoir ce qui revient souvent dans l'epreuve et dans le profil demande.</p>
+                <h3>2. Organiser la revision par semaines</h3>
+                <p>Des objectifs courts et clairs sont plus efficaces qu'un programme trop ambitieux que l'on abandonne apres quelques jours.</p>
+                <h3>3. Gerer aussi le dossier administratif</h3>
+                <p>Les pieces, les plateformes et les delais font aussi partie du travail.</p>
+                <h3>4. S'entrainer dans les conditions reelles</h3>
+                <p>Les exercices chronometres aident a mieux gerer le temps et a reperer les lacunes avant l'epreuve.</p>
+            `
+        }
     }
   };
 
