@@ -17,12 +17,14 @@ if hasattr(sys.stderr, "reconfigure"):
 # Import custom modules
 from scraper import scrape_all_sources, get_job_details
 import ai_rewriter
+import blog_drafts
 import telegram_notify
 import indexing_api
 
 DB_FILE = "web/jobs.db"
 MAX_META_DESCRIPTION_LENGTH = 160
 MAX_TELEGRAM_POST_LENGTH = 280
+MIN_JOBS_FOR_AUTO_BLOG_DRAFT = 2
 PLACEHOLDER_SITE_HOSTS = {
     "example.com",
     "localhost",
@@ -222,6 +224,7 @@ def main_flow():
     # 3. Setup Gemini/Groq
     model = ai_rewriter.setup_gemini()
     # It might be None if key is missing, but AI rewriter has fallbacks handled below
+    generated_blog_jobs = []
 
     for i, job in enumerate(new_jobs):
         print(f"[*] Processing ({i+1}/{len(new_jobs)}): {job['title']}")
@@ -271,6 +274,17 @@ def main_flow():
             print(f"[+] Saved to DB (ID: {job_id}): {job['title']}")
 
             new_post_url = build_public_job_url(job_id, job["url"])
+            generated_blog_jobs.append({
+                "title": job.get("title", ""),
+                "title_fr": job.get("title_fr", ""),
+                "organization": job.get("organization", ""),
+                "organization_fr": job.get("organization_fr", ""),
+                "deadline": job.get("deadline", ""),
+                "posts": job.get("posts", ""),
+                "meta_description": job.get("meta_description", ""),
+                "url": job.get("url", ""),
+                "post_url": new_post_url,
+            })
 
             # Only notify Google after a real public site URL is configured.
             if SITE_URL:
@@ -282,6 +296,20 @@ def main_flow():
 
         # Politeness delay
         time.sleep(2)
+
+    if len(generated_blog_jobs) >= MIN_JOBS_FOR_AUTO_BLOG_DRAFT:
+        print(f"[*] Generating auto blog draft from {len(generated_blog_jobs)} new jobs...")
+        draft_payload = ai_rewriter.generate_blog_draft(model, generated_blog_jobs)
+        draft_result = blog_drafts.save_auto_blog_draft(
+            draft_payload,
+            generated_blog_jobs,
+        )
+        if draft_result:
+            print(f"[*] Auto blog draft result: {draft_result.get('status')}")
+    elif generated_blog_jobs:
+        print(
+            f"[*] Auto blog draft skipped: only {len(generated_blog_jobs)} new job(s) found. Minimum is {MIN_JOBS_FOR_AUTO_BLOG_DRAFT}."
+        )
 
     print("[+] All done! Automation core is updated.")
 

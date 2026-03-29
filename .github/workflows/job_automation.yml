@@ -36,6 +36,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           SITE_URL: ${{ secrets.SITE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python main.py
 
       - name: 💾 Commit & Push Updated Jobs

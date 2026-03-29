@@ -2,6 +2,8 @@ import requests
 import json
 import os
 import time
+import html
+from datetime import datetime
 
 from dotenv import load_dotenv
 
@@ -17,6 +19,7 @@ GROQ_MODEL = "llama-3.3-70b-versatile"
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 OPENROUTER_MODEL = "meta-llama/llama-3.1-8b-instruct:free"
+AUTO_BLOG_TAGS = "auto-draft,veille,emploi,maroc"
 
 def setup_gemini():
     """Returns a dict with configured API keys"""
@@ -105,6 +108,199 @@ def ask_ai_json(keys, prompt):
             print(f"[!] Gemini failed: {e}")
 
     return None
+
+
+def _normalize_inline_text(value):
+    return " ".join(str(value or "").split()).strip()
+
+
+def _has_meaningful_text(value):
+    normalized = _normalize_inline_text(value)
+    return normalized and normalized.upper() not in {"N/A", "NA", "NONE", "NULL", "-"}
+
+
+def _prepare_blog_jobs(jobs, limit=8):
+    prepared = []
+    for job in jobs[:limit]:
+        prepared.append(
+            {
+                "title_ar": _normalize_inline_text(job.get("title", "")),
+                "title_fr": _normalize_inline_text(
+                    job.get("title_fr") or job.get("title", "")
+                ),
+                "organization_ar": _normalize_inline_text(job.get("organization", "")),
+                "organization_fr": _normalize_inline_text(
+                    job.get("organization_fr") or job.get("organization", "")
+                ),
+                "deadline": _normalize_inline_text(job.get("deadline", "")),
+                "posts": _normalize_inline_text(job.get("posts", "")),
+                "summary": _normalize_inline_text(job.get("meta_description", "")),
+                "job_url": _normalize_inline_text(job.get("post_url") or job.get("url")),
+                "source_url": _normalize_inline_text(job.get("url", "")),
+            }
+        )
+    return prepared
+
+
+def _build_job_list_html(jobs, lang):
+    items = []
+    for job in jobs:
+        title = job["title_ar"] if lang == "ar" else job["title_fr"]
+        organization = job["organization_ar"] if lang == "ar" else job["organization_fr"]
+        summary = job["summary"]
+        deadline = job["deadline"] if _has_meaningful_text(job["deadline"]) else ""
+        posts = job["posts"] if _has_meaningful_text(job["posts"]) else ""
+        link = job["job_url"] or job["source_url"]
+
+        details = []
+        if organization:
+            details.append(html.escape(organization))
+        if posts:
+            details.append(html.escape(posts))
+        if deadline:
+            details.append(
+                html.escape(f"{'آخر أجل' if lang == 'ar' else 'Date limite'}: {deadline}")
+            )
+
+        detail_line = " - ".join(details)
+        summary_html = f"<p>{html.escape(summary)}</p>" if summary else ""
+        link_label = "عرض التفاصيل" if lang == "ar" else "Voir l'offre"
+        link_html = (
+            f' <a href="{html.escape(link)}" target="_blank" rel="noopener noreferrer">{link_label}</a>'
+            if link
+            else ""
+        )
+        item = f"<li><strong>{html.escape(title)}</strong>"
+        if detail_line:
+            item += f"<div>{detail_line}</div>"
+        item += f"{summary_html}{link_html}</li>"
+        items.append(item)
+
+    return "<ul>" + "".join(items) + "</ul>"
+
+
+def _build_fallback_blog_draft(jobs, publish_date):
+    prepared_jobs = _prepare_blog_jobs(jobs)
+    display_date = datetime.strptime(publish_date, "%Y-%m-%d").strftime("%d/%m/%Y")
+    hidden_count = max(0, len(jobs) - len(prepared_jobs))
+
+    ar_intro = (
+        f"مسودة يومية تلخص {len(jobs)} فرص جديدة تمت إضافتها إلى JOB MAROC PRO بتاريخ {display_date}. "
+        "يفضل مراجعتها وتحريرها قبل النشر النهائي."
+    )
+    fr_intro = (
+        f"Brouillon quotidien qui resume {len(jobs)} nouvelles offres ajoutees sur JOB MAROC PRO le {display_date}. "
+        "Une relecture editoriale est recommandee avant publication."
+    )
+
+    ar_more = (
+        f"<p>هناك ايضا {hidden_count} فرص اضافية في هذا التحديث يمكن اضافتها يدويا اذا رغبت.</p>"
+        if hidden_count
+        else ""
+    )
+    fr_more = (
+        f"<p>Il existe aussi {hidden_count} offres supplementaires dans cette vague que vous pouvez ajouter manuellement si besoin.</p>"
+        if hidden_count
+        else ""
+    )
+
+    ar_content = (
+        f"<p>{html.escape(ar_intro)}</p>"
+        "<h2>ابرز الفرص الجديدة</h2>"
+        f"{_build_job_list_html(prepared_jobs, 'ar')}"
+        "<h2>نصائح قبل النشر</h2>"
+        "<ul>"
+        "<li>راجع العنوان والوصف حتى يكونا واضحين ومفيدين للباحث عن العمل.</li>"
+        "<li>تأكد من صحة الروابط الرسمية وتاريخ آخر أجل قبل نشر المقال.</li>"
+        "<li>أضف ملاحظات تحريرية أو سياق إضافي إذا كانت الفرص تخص جهة واحدة أو تخصصا معينا.</li>"
+        "</ul>"
+        f"{ar_more}"
+        "<p>تم إنشاء هذه المسودة تلقائيا من طرف البوت وهي تحتاج مراجعة بشرية قبل النشر.</p>"
+    )
+
+    fr_content = (
+        f"<p>{html.escape(fr_intro)}</p>"
+        "<h2>Offres a mettre en avant</h2>"
+        f"{_build_job_list_html(prepared_jobs, 'fr')}"
+        "<h2>Conseils avant publication</h2>"
+        "<ul>"
+        "<li>Relisez le titre et le resume pour qu ils apportent une vraie valeur au lecteur.</li>"
+        "<li>Verifiez les liens officiels et les dates limites avant de publier l article.</li>"
+        "<li>Ajoutez un angle editorial si les offres concernent le meme organisme ou le meme secteur.</li>"
+        "</ul>"
+        f"{fr_more}"
+        "<p>Ce brouillon a ete genere automatiquement par le bot et doit etre relu avant publication.</p>"
+    )
+
+    return {
+        "date": publish_date,
+        "tags": AUTO_BLOG_TAGS,
+        "title_ar": f"فرص عمل جديدة في المغرب - {display_date}",
+        "title_fr": f"Nouvelles offres d'emploi au Maroc - {display_date}",
+        "excerpt_ar": f"ملخص يومي لأهم فرص العمل والمسابقات الجديدة المضافة بتاريخ {display_date}.",
+        "excerpt_fr": f"Resume quotidien des principales offres et concours ajoutes le {display_date}.",
+        "content_ar": ar_content,
+        "content_fr": fr_content,
+    }
+
+
+def generate_blog_draft(keys, jobs, publish_date=None):
+    if not jobs:
+        return None
+
+    publish_date = publish_date or datetime.utcnow().strftime("%Y-%m-%d")
+    prepared_jobs = _prepare_blog_jobs(jobs)
+    fallback = _build_fallback_blog_draft(jobs, publish_date)
+
+    if not keys:
+        return fallback
+
+    prompt = f"""You are an editorial assistant for a Moroccan jobs website. Return JSON only.
+Create a high-quality bilingual blog DRAFT that summarizes the new opportunities provided below.
+Rules:
+- Output valid JSON only.
+- Use HTML only inside content_ar and content_fr. No markdown.
+- Keep the article helpful, original, and concise.
+- Do not invent facts, deadlines, salaries, or requirements that are not in the provided data.
+- Mention that the article is a draft that should be reviewed before publication.
+- Keep excerpts under 190 characters.
+- Tags must be a short comma-separated string in lowercase.
+
+Publish date: {publish_date}
+Jobs context:
+{json.dumps(prepared_jobs, ensure_ascii=False)}
+
+Return exactly this shape:
+{{
+  "title_ar": "string",
+  "title_fr": "string",
+  "excerpt_ar": "string",
+  "excerpt_fr": "string",
+  "content_ar": "<p>...</p>",
+  "content_fr": "<p>...</p>",
+  "tags": "comma,separated,tags"
+}}"""
+
+    result = ask_ai_json(keys, prompt)
+    if not result:
+        return fallback
+
+    draft = {
+        "date": publish_date,
+        "tags": _normalize_inline_text(result.get("tags", "")) or AUTO_BLOG_TAGS,
+        "title_ar": _normalize_inline_text(result.get("title_ar", "")),
+        "title_fr": _normalize_inline_text(result.get("title_fr", "")),
+        "excerpt_ar": _normalize_inline_text(result.get("excerpt_ar", "")),
+        "excerpt_fr": _normalize_inline_text(result.get("excerpt_fr", "")),
+        "content_ar": str(result.get("content_ar", "")).strip(),
+        "content_fr": str(result.get("content_fr", "")).strip(),
+    }
+
+    required = ["title_ar", "title_fr", "excerpt_ar", "excerpt_fr", "content_ar", "content_fr"]
+    if any(not draft[key] for key in required):
+        return fallback
+
+    return draft
 
 def rewrite_job(keys, job_data):
     if not keys: return None
