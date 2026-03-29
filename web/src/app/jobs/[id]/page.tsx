@@ -189,6 +189,79 @@ function serializeJsonLd(data: object): string {
   return JSON.stringify(data).replace(/</g, '\\u003c');
 }
 
+function getOpportunitySummary(job: JobRecord, lang: Lang): string {
+  const title = getLocalizedTitle(job, lang);
+  const organization = getLocalizedOrganization(job, lang);
+  const description = getJobDescription(job, lang);
+
+  if (lang === 'fr') {
+    return `${description} Cette page vous aide a comprendre rapidement le poste ${title}, l'organisme ${organization}, le delai de candidature et les points a verifier avant d'envoyer votre dossier.`;
+  }
+
+  return `${description} هذه الصفحة تساعدك على فهم فرصة ${title} لدى ${organization} بسرعة، مع أهم النقاط التي يجب مراجعتها قبل إرسال ملف الترشيح.`;
+}
+
+function getBestFitSignals(job: JobRecord, lang: Lang): string[] {
+  const title = getLocalizedTitle(job, lang);
+  const organization = getLocalizedOrganization(job, lang);
+
+  if (lang === 'fr') {
+    return [
+      `Ce poste peut vous convenir si vous ciblez activement le role "${title}".`,
+      `Il est utile si vous cherchez une opportunite liee a ${organization} ou a son secteur.`,
+      "Il est pertinent pour les candidats qui prennent le temps de lire l'annonce officielle en detail avant de postuler.",
+    ];
+  }
+
+  return [
+    `هذه الفرصة مناسبة لك إذا كنت تستهدف منصب "${title}" بشكل مباشر.`,
+    `وهي مفيدة أيضا إذا كنت تبحث عن فرصة مرتبطة بـ ${organization} أو بالقطاع الذي تنتمي إليه.`,
+    'كما تناسب المترشحين الذين يراجعون الإعلان الرسمي بتفصيل قبل تجهيز ملفهم.',
+  ];
+}
+
+function getApplicationChecklist(job: JobRecord, lang: Lang): string[] {
+  const deadline = isExpired(job.deadline)
+    ? lang === 'fr'
+      ? 'Le delai est deja expire, verifiez d abord si une prolongation officielle a ete annoncee.'
+      : 'الأجل انتهى بالفعل، لذلك تحقق أولا هل تم الإعلان عن تمديد رسمي.'
+    : lang === 'fr'
+      ? `Verifiez la date limite (${job.deadline}) et ne laissez pas votre dossier pour la derniere minute.`
+      : `راجع آخر أجل (${job.deadline}) ولا تؤجل إرسال الملف حتى آخر لحظة.`;
+
+  if (lang === 'fr') {
+    return [
+      deadline,
+      "Lisez toujours l'annonce officielle complete pour confirmer les conditions, les pieces demandees et la methode de candidature.",
+      'Preparez un dossier propre: CV a jour, documents demandes, et informations identiques sur tous vos fichiers.',
+      'Conservez le lien source officiel et une copie de votre candidature pour pouvoir la suivre ensuite.',
+    ];
+  }
+
+  return [
+    deadline,
+    'اقرأ الإعلان الرسمي كاملا لتتأكد من الشروط والوثائق المطلوبة وطريقة التقديم.',
+    'جهز ملفا منظما: سيرة ذاتية محينة، الوثائق المطلوبة، ومعلومات متطابقة في جميع الملفات.',
+    'احتفظ بالرابط الرسمي ونسخة من ترشيحك حتى تتمكن من المتابعة بعد ذلك.',
+  ];
+}
+
+function getApplicationTips(lang: Lang): string[] {
+  if (lang === 'fr') {
+    return [
+      'Adaptez votre CV au poste vise au lieu d envoyer le meme document pour toutes les offres.',
+      "Verifiez l'orthographe de votre nom, email et numero de telephone avant validation.",
+      "Si l'annonce cite des criteres precis, reprenez-les clairement dans votre dossier quand c'est pertinent.",
+    ];
+  }
+
+  return [
+    'عدل السيرة الذاتية حسب المنصب المستهدف بدل إرسال نفس الملف لجميع العروض.',
+    'تأكد من صحة الاسم والبريد الإلكتروني ورقم الهاتف قبل تأكيد الترشيح.',
+    'إذا كان الإعلان يذكر شروطا دقيقة، فحاول إبراز ما يوافقها بوضوح داخل ملفك.',
+  ];
+}
+
 function buildJobPostingSchema(job: JobRecord, lang: Lang) {
   const title = getLocalizedTitle(job, lang);
   const organization = getLocalizedOrganization(job, lang);
@@ -304,6 +377,24 @@ export default async function JobDetail(props: JobPageProps) {
 
   const t = getUi(lang);
   const jobPostingSchema = buildJobPostingSchema(job, lang);
+  const valueCopy =
+    lang === 'fr'
+      ? {
+          summaryTitle: 'Resume utile de cette offre',
+          fitTitle: 'Pour quel profil cette offre peut convenir ?',
+          checklistTitle: 'Que verifier avant de postuler ?',
+          tipsTitle: 'Conseils pour mieux candidater',
+        }
+      : {
+          summaryTitle: 'ملخص مفيد حول هذه الفرصة',
+          fitTitle: 'لمن قد تناسب هذه الفرصة؟',
+          checklistTitle: 'ماذا تفعل قبل التقديم؟',
+          tipsTitle: 'نصائح تزيد حظوظك',
+        };
+  const opportunitySummary = getOpportunitySummary(job, lang);
+  const bestFitSignals = getBestFitSignals(job, lang);
+  const applicationChecklist = getApplicationChecklist(job, lang);
+  const applicationTips = getApplicationTips(lang);
 
   return (
     <div className="min-h-screen font-sans flex flex-col" style={{ background: '#f1f5f9' }} dir={dir}>
@@ -360,6 +451,51 @@ export default async function JobDetail(props: JobPageProps) {
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {job.content_html || job.full_description}
               </ReactMarkdown>
+            </div>
+          </div>
+
+          <div className="px-6 md:px-8 pb-8">
+            <div className="grid gap-5 lg:grid-cols-2">
+              <section className="rounded-2xl border border-blue-100 bg-blue-50/70 p-5">
+                <h2 className="text-lg font-black text-slate-900">{valueCopy.summaryTitle}</h2>
+                <p className="mt-3 text-sm leading-7 text-slate-700">{opportunitySummary}</p>
+              </section>
+
+              <section className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-5">
+                <h2 className="text-lg font-black text-slate-900">{valueCopy.fitTitle}</h2>
+                <ul className="mt-3 space-y-3 text-sm leading-7 text-slate-700">
+                  {bestFitSignals.map((item) => (
+                    <li key={item} className="flex gap-3">
+                      <span className="mt-1 text-emerald-600">•</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              <section className="rounded-2xl border border-amber-100 bg-amber-50/70 p-5">
+                <h2 className="text-lg font-black text-slate-900">{valueCopy.checklistTitle}</h2>
+                <ul className="mt-3 space-y-3 text-sm leading-7 text-slate-700">
+                  {applicationChecklist.map((item) => (
+                    <li key={item} className="flex gap-3">
+                      <span className="mt-1 text-amber-600">•</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <h2 className="text-lg font-black text-slate-900">{valueCopy.tipsTitle}</h2>
+                <ul className="mt-3 space-y-3 text-sm leading-7 text-slate-700">
+                  {applicationTips.map((item) => (
+                    <li key={item} className="flex gap-3">
+                      <span className="mt-1 text-slate-500">•</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
             </div>
           </div>
 
