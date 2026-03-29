@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { loginAdmin, logoutAdmin, requireAdminAuth } from '@/lib/admin-auth';
 import { deleteBlogPost, saveBlogPost, saveSiteSettings } from '@/lib/content';
-import { isReadonlyDbRuntime } from '@/lib/db';
+import { isReadonlyContentStore } from '@/lib/db';
 
 type Lang = 'ar' | 'fr';
 type AdminPostFilter = 'all' | 'published' | 'draft';
@@ -77,7 +77,7 @@ export async function saveSiteSettingsAction(formData: FormData) {
   const lang = readLang(formData);
   await requireAdminAuth();
 
-  if (isReadonlyDbRuntime()) {
+  if (isReadonlyContentStore()) {
     redirect(buildRoute('/admin', lang, { error: 'readonly' }, 'settings'));
   }
 
@@ -112,7 +112,7 @@ export async function saveBlogPostAction(formData: FormData) {
   const lang = readLang(formData);
   await requireAdminAuth();
 
-  if (isReadonlyDbRuntime()) {
+  if (isReadonlyContentStore()) {
     redirect(buildRoute('/admin', lang, { error: 'readonly' }, 'blog'));
   }
 
@@ -158,7 +158,7 @@ export async function deleteBlogPostAction(formData: FormData) {
   const lang = readLang(formData);
   await requireAdminAuth();
 
-  if (isReadonlyDbRuntime()) {
+  if (isReadonlyContentStore()) {
     redirect(buildRoute('/admin', lang, { error: 'readonly' }, 'blog'));
   }
 

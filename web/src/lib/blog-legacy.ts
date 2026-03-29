@@ -5,7 +5,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { STATIC_BLOG_CARDS, type StaticBlogCard } from '@/lib/blog-static';
 import { listBlogPosts, saveBlogPost } from '@/lib/content';
-import { isReadonlyDbRuntime } from '@/lib/db';
+import { isReadonlyContentStore } from '@/lib/db';
 
 type LegacyCard = StaticBlogCard;
 
@@ -83,7 +83,7 @@ async function loadLegacyBlogData(): Promise<{
 }
 
 export async function ensureLegacyBlogPosts(): Promise<number> {
-  if (isReadonlyDbRuntime()) {
+  if (isReadonlyContentStore()) {
     return 0;
   }
 

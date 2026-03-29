@@ -9,7 +9,7 @@ import {
 import { requireAdminAuth } from '@/lib/admin-auth';
 import { ensureLegacyBlogPosts, listLegacyBlogCards } from '@/lib/blog-legacy';
 import { getSiteSettings, listBlogPosts } from '@/lib/content';
-import { isReadonlyDbRuntime } from '@/lib/db';
+import { isReadonlyContentStore } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,17 +40,17 @@ function getUi(lang: Lang) {
       savedPost: "L'article du blog a ete enregistre.",
       deletedPost: "L'article du blog a ete supprime.",
       readOnlyNotice:
-        "Mode lecture seule sur Vercel. SQLite ne peut pas etre modifiee depuis ce runtime serverless.",
+        "Mode lecture seule. Les changements admin restent desactives tant qu'une base de donnees persistante n'est pas configuree.",
       readOnlyAction:
-        "Les modifications admin sont desactivees ici tant qu'une base de donnees persistante n'est pas configuree.",
+        'Configure DATABASE_URL pour activer la creation, la modification et la suppression en production.',
       totalArticles: 'Articles visibles',
       staticArticles: 'Articles statiques',
-      databaseArticles: 'Articles base SQLite',
-      drafts: 'Brouillons SQLite',
+      databaseArticles: 'Articles base de donnees',
+      drafts: 'Brouillons base de donnees',
       noPostYet: 'Aucun article pour le moment.',
       latestPostDate: 'Date du dernier article',
       readOnlyStatsHint:
-        'Le blog public continue d afficher les articles statiques du code meme si la base SQLite reste vide sur Vercel.',
+        'Le blog public continue d afficher les articles statiques du code meme si aucune base persistante n est encore branchee.',
       settingsEyebrow: 'Parametres',
       settingsTitle: 'Footer, a propos, contact',
       settingsText:
@@ -114,9 +114,9 @@ function getUi(lang: Lang) {
     savedPost: 'تم حفظ مقال المدونة.',
     deletedPost: 'تم حذف مقال المدونة.',
     readOnlyNotice:
-      'Read-only mode on Vercel. SQLite cannot be updated from this serverless runtime.',
+      'Read-only mode. Admin changes stay disabled until a persistent database is configured.',
     readOnlyAction:
-      'Admin changes are disabled here until a persistent database is configured.',
+      'Configure DATABASE_URL to enable create, edit, and delete in production.',
     totalArticles: 'إجمالي المقالات',
     staticArticles: 'المقالات الثابتة',
     databaseArticles: 'مقالات قاعدة البيانات',
@@ -252,7 +252,7 @@ function Field({
 export default async function AdminPage(props: {
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) {
-  const isReadonly = isReadonlyDbRuntime();
+  const isReadonly = isReadonlyContentStore();
   await requireAdminAuth();
 
   if (!isReadonly) {

@@ -1,11 +1,16 @@
 import sqlite3 from 'sqlite3';
 import { open, Database } from 'sqlite';
 import path from 'path';
+import { hasContentDatabaseUrl } from '@/lib/postgres';
 
 let db: Database | null = null;
 
 export function isReadonlyDbRuntime(): boolean {
     return process.env.VERCEL === '1' || Boolean(process.env.VERCEL_ENV);
+}
+
+export function isReadonlyContentStore(): boolean {
+    return !hasContentDatabaseUrl() && isReadonlyDbRuntime();
 }
 
 export async function getDb(): Promise<Database> {
