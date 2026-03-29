@@ -141,3 +141,8 @@ export async function ensureLegacyBlogPosts(): Promise<number> {
 
   return insertedCount;
 }
+
+export async function listLegacyBlogCards(): Promise<LegacyCard[]> {
+  const { cards } = await loadLegacyBlogData();
+  return cards;
+}

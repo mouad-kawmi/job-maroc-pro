@@ -7,7 +7,7 @@ import {
   saveSiteSettingsAction,
 } from '@/app/admin/actions';
 import { requireAdminAuth } from '@/lib/admin-auth';
-import { ensureLegacyBlogPosts } from '@/lib/blog-legacy';
+import { ensureLegacyBlogPosts, listLegacyBlogCards } from '@/lib/blog-legacy';
 import { getSiteSettings, listBlogPosts } from '@/lib/content';
 import { isReadonlyDbRuntime } from '@/lib/db';
 
@@ -43,11 +43,14 @@ function getUi(lang: Lang) {
         "Mode lecture seule sur Vercel. SQLite ne peut pas etre modifiee depuis ce runtime serverless.",
       readOnlyAction:
         "Les modifications admin sont desactivees ici tant qu'une base de donnees persistante n'est pas configuree.",
-      posts: 'Articles',
-      published: 'Publies',
-      drafts: 'Brouillons',
+      totalArticles: 'Articles visibles',
+      staticArticles: 'Articles statiques',
+      databaseArticles: 'Articles base SQLite',
+      drafts: 'Brouillons SQLite',
       noPostYet: 'Aucun article pour le moment.',
       latestPostDate: 'Date du dernier article',
+      readOnlyStatsHint:
+        'Le blog public continue d afficher les articles statiques du code meme si la base SQLite reste vide sur Vercel.',
       settingsEyebrow: 'Parametres',
       settingsTitle: 'Footer, a propos, contact',
       settingsText:
@@ -114,11 +117,14 @@ function getUi(lang: Lang) {
       'Read-only mode on Vercel. SQLite cannot be updated from this serverless runtime.',
     readOnlyAction:
       'Admin changes are disabled here until a persistent database is configured.',
-    posts: 'المقالات',
-    published: 'المنشور',
-    drafts: 'المسودات',
+    totalArticles: 'إجمالي المقالات',
+    staticArticles: 'المقالات الثابتة',
+    databaseArticles: 'مقالات قاعدة البيانات',
+    drafts: 'مسودات قاعدة البيانات',
     noPostYet: 'لا يوجد اي مقال بعد.',
     latestPostDate: 'تاريخ اخر مقال',
+    readOnlyStatsHint:
+      'المدونة العامة ما زالت تعرض المقالات الثابتة الموجودة في الكود حتى لو كانت قاعدة SQLite فارغة على Vercel.',
     settingsEyebrow: 'الاعدادات',
     settingsTitle: 'التذييل ومن نحن واتصل بنا',
     settingsText:
@@ -256,11 +262,32 @@ export default async function AdminPage(props: {
   const searchParams = await props.searchParams;
   const lang = (searchParams.lang === 'fr' ? 'fr' : 'ar') as Lang;
   const ui = getUi(lang);
-  const posts = await listBlogPosts({ includeDrafts: true });
-  const settings = await getSiteSettings();
+  const [posts, settings, legacyCards] = await Promise.all([
+    listBlogPosts({ includeDrafts: true }),
+    getSiteSettings(),
+    listLegacyBlogCards(),
+  ]);
+  const articleDates = new Map<string, string>();
+
+  for (const article of legacyCards) {
+    articleDates.set(article.slug, article.date);
+  }
+
+  for (const post of posts) {
+    const existingDate = articleDates.get(post.slug);
+    if (!existingDate || post.date.localeCompare(existingDate) > 0) {
+      articleDates.set(post.slug, post.date);
+    }
+  }
+
+  const totalArticles = articleDates.size;
+  const staticArticles = legacyCards.length;
+  const databaseArticles = posts.length;
   const publishedPosts = posts.filter((post) => post.isPublished).length;
   const draftPosts = posts.length - publishedPosts;
-  const latestPostDate = posts[0]?.date || ui.noPostYet;
+  const latestPostDate =
+    [...articleDates.values()].sort((left, right) => right.localeCompare(left))[0] ||
+    ui.noPostYet;
 
   const flashMessage = searchParams.error === 'readonly'
     ? ui.readOnlyAction
@@ -364,16 +391,21 @@ export default async function AdminPage(props: {
           </div>
         )}
 
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <StatCard
-            label={ui.posts}
-            value={String(posts.length)}
+            label={ui.totalArticles}
+            value={String(totalArticles)}
             tone="border-slate-200 bg-white text-slate-900"
           />
           <StatCard
-            label={ui.published}
-            value={String(publishedPosts)}
+            label={ui.staticArticles}
+            value={String(staticArticles)}
             tone="border-emerald-200 bg-emerald-50 text-emerald-900"
+          />
+          <StatCard
+            label={ui.databaseArticles}
+            value={String(databaseArticles)}
+            tone="border-sky-200 bg-sky-50 text-sky-900"
           />
           <StatCard
             label={ui.drafts}
@@ -381,6 +413,12 @@ export default async function AdminPage(props: {
             tone="border-amber-200 bg-amber-50 text-amber-900"
           />
         </div>
+
+        {isReadonly && staticArticles > 0 && databaseArticles === 0 && (
+          <div className="mt-4 rounded-3xl border border-sky-200 bg-sky-50 p-5 text-sm font-bold text-sky-900 shadow-sm">
+            {ui.readOnlyStatsHint}
+          </div>
+        )}
 
         <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-600 shadow-sm">
           {ui.latestPostDate}:{' '}
