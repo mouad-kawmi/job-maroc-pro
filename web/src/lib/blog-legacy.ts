@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import vm from 'node:vm';
 import { listBlogPosts, saveBlogPost } from '@/lib/content';
+import { isReadonlyDbRuntime } from '@/lib/db';
 
 type LegacyCard = {
   slug: string;
@@ -98,6 +99,10 @@ async function loadLegacyBlogData(): Promise<{
 }
 
 export async function ensureLegacyBlogPosts(): Promise<number> {
+  if (isReadonlyDbRuntime()) {
+    return 0;
+  }
+
   const [{ cards, details }, existingPosts] = await Promise.all([
     loadLegacyBlogData(),
     listBlogPosts({ includeDrafts: true }),

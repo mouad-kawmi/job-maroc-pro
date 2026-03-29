@@ -9,6 +9,7 @@ import {
 import { requireAdminAuth } from '@/lib/admin-auth';
 import { ensureLegacyBlogPosts } from '@/lib/blog-legacy';
 import { getSiteSettings, listBlogPosts } from '@/lib/content';
+import { isReadonlyDbRuntime } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +39,10 @@ function getUi(lang: Lang) {
       savedSettings: 'Les parametres du site ont ete enregistres.',
       savedPost: "L'article du blog a ete enregistre.",
       deletedPost: "L'article du blog a ete supprime.",
+      readOnlyNotice:
+        "Mode lecture seule sur Vercel. SQLite ne peut pas etre modifiee depuis ce runtime serverless.",
+      readOnlyAction:
+        "Les modifications admin sont desactivees ici tant qu'une base de donnees persistante n'est pas configuree.",
       posts: 'Articles',
       published: 'Publies',
       drafts: 'Brouillons',
@@ -105,6 +110,10 @@ function getUi(lang: Lang) {
     savedSettings: 'تم حفظ اعدادات الموقع.',
     savedPost: 'تم حفظ مقال المدونة.',
     deletedPost: 'تم حذف مقال المدونة.',
+    readOnlyNotice:
+      'Read-only mode on Vercel. SQLite cannot be updated from this serverless runtime.',
+    readOnlyAction:
+      'Admin changes are disabled here until a persistent database is configured.',
     posts: 'المقالات',
     published: 'المنشور',
     drafts: 'المسودات',
@@ -237,8 +246,12 @@ function Field({
 export default async function AdminPage(props: {
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) {
+  const isReadonly = isReadonlyDbRuntime();
   await requireAdminAuth();
-  await ensureLegacyBlogPosts();
+
+  if (!isReadonly) {
+    await ensureLegacyBlogPosts();
+  }
 
   const searchParams = await props.searchParams;
   const lang = (searchParams.lang === 'fr' ? 'fr' : 'ar') as Lang;
@@ -249,25 +262,29 @@ export default async function AdminPage(props: {
   const draftPosts = posts.length - publishedPosts;
   const latestPostDate = posts[0]?.date || ui.noPostYet;
 
-  const flashMessage = searchParams.deleted
-    ? ui.deletedPost
-    : searchParams.saved === 'settings'
-      ? ui.savedSettings
-      : searchParams.saved === 'post'
-        ? searchParams.state === 'draft'
-          ? lang === 'fr'
-            ? 'Le brouillon est enregistre. Il reste prive dans l administration.'
-            : 'تم حفظ المقال كمسودة وهو ظاهر فقط داخل الادارة.'
-          : lang === 'fr'
-            ? 'L article est enregistre et visible sur le blog public.'
-            : 'تم حفظ المقال وهو ظاهر الان في المدونة العامة.'
-        : searchParams.saved === 'login'
-          ? ui.savedLogin
-          : '';
+  const flashMessage = searchParams.error === 'readonly'
+    ? ui.readOnlyAction
+    : searchParams.deleted
+      ? ui.deletedPost
+      : searchParams.saved === 'settings'
+        ? ui.savedSettings
+        : searchParams.saved === 'post'
+          ? searchParams.state === 'draft'
+            ? lang === 'fr'
+              ? 'Le brouillon est enregistre. Il reste prive dans l administration.'
+              : 'تم حفظ المقال كمسودة وهو ظاهر فقط داخل الادارة.'
+            : lang === 'fr'
+              ? 'L article est enregistre et visible sur le blog public.'
+              : 'تم حفظ المقال وهو ظاهر الان في المدونة العامة.'
+          : searchParams.saved === 'login'
+            ? ui.savedLogin
+            : '';
 
-  const flashTone = searchParams.deleted
+  const flashTone = searchParams.error === 'readonly'
     ? 'border-amber-200 bg-amber-50 text-amber-900'
-    : 'border-emerald-200 bg-emerald-50 text-emerald-800';
+    : searchParams.deleted
+      ? 'border-amber-200 bg-amber-50 text-amber-900'
+      : 'border-emerald-200 bg-emerald-50 text-emerald-800';
 
   return (
     <main
@@ -334,6 +351,12 @@ export default async function AdminPage(props: {
             </div>
           </div>
         </div>
+
+        {isReadonly && (
+          <div className="mt-6 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-900">
+            {ui.readOnlyNotice}
+          </div>
+        )}
 
         {flashMessage && (
           <div className={`mt-6 rounded-3xl border p-4 text-sm font-bold ${flashTone}`}>

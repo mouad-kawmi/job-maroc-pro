@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { loginAdmin, logoutAdmin, requireAdminAuth } from '@/lib/admin-auth';
 import { deleteBlogPost, saveBlogPost, saveSiteSettings } from '@/lib/content';
+import { isReadonlyDbRuntime } from '@/lib/db';
 
 type Lang = 'ar' | 'fr';
 type AdminPostFilter = 'all' | 'published' | 'draft';
@@ -73,8 +74,12 @@ export async function logoutAdminAction(formData: FormData) {
 }
 
 export async function saveSiteSettingsAction(formData: FormData) {
-  await requireAdminAuth();
   const lang = readLang(formData);
+  await requireAdminAuth();
+
+  if (isReadonlyDbRuntime()) {
+    redirect(buildRoute('/admin', lang, { error: 'readonly' }, 'settings'));
+  }
 
   await saveSiteSettings({
     footerDisclaimerAr: readString(formData, 'footerDisclaimerAr'),
@@ -104,8 +109,13 @@ export async function saveSiteSettingsAction(formData: FormData) {
 }
 
 export async function saveBlogPostAction(formData: FormData) {
-  await requireAdminAuth();
   const lang = readLang(formData);
+  await requireAdminAuth();
+
+  if (isReadonlyDbRuntime()) {
+    redirect(buildRoute('/admin', lang, { error: 'readonly' }, 'blog'));
+  }
+
   const search = readString(formData, 'q');
   const status = readAdminPostFilter(formData);
   const page = readPage(formData);
@@ -145,8 +155,13 @@ export async function saveBlogPostAction(formData: FormData) {
 }
 
 export async function deleteBlogPostAction(formData: FormData) {
-  await requireAdminAuth();
   const lang = readLang(formData);
+  await requireAdminAuth();
+
+  if (isReadonlyDbRuntime()) {
+    redirect(buildRoute('/admin', lang, { error: 'readonly' }, 'blog'));
+  }
+
   const search = readString(formData, 'q');
   const status = readAdminPostFilter(formData);
   const page = readPage(formData);
