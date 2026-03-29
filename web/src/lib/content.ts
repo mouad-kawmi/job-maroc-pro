@@ -70,6 +70,14 @@ type BlogPostRow = {
 
 let initPromise: Promise<void> | null = null;
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function logReadFallback(scope: string, error: unknown): void {
+  console.warn(`[content] Falling back for ${scope}: ${getErrorMessage(error)}`);
+}
+
 function normalizeDateInput(value: string): string {
   const trimmed = value.trim();
   return /^\d{4}-\d{2}-\d{2}$/.test(trimmed)
@@ -151,7 +159,10 @@ async function ensureContentTables() {
           value,
         );
       }
-    })();
+    })().catch((error) => {
+      initPromise = null;
+      throw error;
+    });
   }
 
   await initPromise;
@@ -183,19 +194,26 @@ async function ensureUniqueSlug(
 }
 
 export async function getSiteSettings(): Promise<SiteSettings> {
-  const db = await ensureContentTables();
-  const rows = await db.all<{ key: SiteSettingsKey; value: string }[]>(
-    'SELECT key, value FROM site_settings',
-  );
+  try {
+    const db = await getDb();
+    const rows = await db.all<{ key: SiteSettingsKey; value: string }[]>(
+      'SELECT key, value FROM site_settings',
+    );
 
-  const overrides = Object.fromEntries(
-    rows.map((row) => [row.key, row.value]),
-  ) as Partial<SiteSettings>;
+    const overrides = Object.fromEntries(
+      rows.map((row) => [row.key, row.value]),
+    ) as Partial<SiteSettings>;
 
-  return {
-    ...DEFAULT_SITE_SETTINGS,
-    ...overrides,
-  };
+    return {
+      ...DEFAULT_SITE_SETTINGS,
+      ...overrides,
+    };
+  } catch (error) {
+    logReadFallback('site settings', error);
+    return {
+      ...DEFAULT_SITE_SETTINGS,
+    };
+  }
 }
 
 export async function saveSiteSettings(
@@ -223,40 +241,50 @@ export async function saveSiteSettings(
 export async function listBlogPosts(options?: {
   includeDrafts?: boolean;
 }): Promise<BlogPost[]> {
-  const db = await ensureContentTables();
-  const includeDrafts = options?.includeDrafts ?? false;
+  try {
+    const db = await getDb();
+    const includeDrafts = options?.includeDrafts ?? false;
 
-  const rows = await db.all<BlogPostRow[]>(
-    `
-      SELECT *
-      FROM blog_posts
-      ${includeDrafts ? '' : 'WHERE is_published = 1'}
-      ORDER BY date DESC, id DESC
-    `,
-  );
+    const rows = await db.all<BlogPostRow[]>(
+      `
+        SELECT *
+        FROM blog_posts
+        ${includeDrafts ? '' : 'WHERE is_published = 1'}
+        ORDER BY date DESC, id DESC
+      `,
+    );
 
-  return rows.map(mapBlogPost);
+    return rows.map(mapBlogPost);
+  } catch (error) {
+    logReadFallback('blog posts list', error);
+    return [];
+  }
 }
 
 export async function getBlogPostBySlug(
   slug: string,
   options?: { includeDrafts?: boolean },
 ): Promise<BlogPost | null> {
-  const db = await ensureContentTables();
-  const includeDrafts = options?.includeDrafts ?? false;
+  try {
+    const db = await getDb();
+    const includeDrafts = options?.includeDrafts ?? false;
 
-  const row = await db.get<BlogPostRow>(
-    `
-      SELECT *
-      FROM blog_posts
-      WHERE slug = ?
-      ${includeDrafts ? '' : 'AND is_published = 1'}
-      LIMIT 1
-    `,
-    slug,
-  );
+    const row = await db.get<BlogPostRow>(
+      `
+        SELECT *
+        FROM blog_posts
+        WHERE slug = ?
+        ${includeDrafts ? '' : 'AND is_published = 1'}
+        LIMIT 1
+      `,
+      slug,
+    );
 
-  return row ? mapBlogPost(row) : null;
+    return row ? mapBlogPost(row) : null;
+  } catch (error) {
+    logReadFallback(`blog post "${slug}"`, error);
+    return null;
+  }
 }
 
 export async function saveBlogPost(input: {

@@ -4,6 +4,10 @@ import path from 'path';
 
 let db: Database | null = null;
 
+function isVercelReadonlyRuntime(): boolean {
+    return process.env.VERCEL === '1' || Boolean(process.env.VERCEL_ENV);
+}
+
 export async function getDb(): Promise<Database> {
     if (db) return db;
     
@@ -12,7 +16,11 @@ export async function getDb(): Promise<Database> {
     
     db = await open({
         filename: dbPath,
-        driver: sqlite3.Database
+        driver: sqlite3.Database,
+        // Vercel serverless functions run on a read-only filesystem.
+        mode: isVercelReadonlyRuntime()
+          ? sqlite3.OPEN_READONLY
+          : sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE,
     });
     
     return db;
