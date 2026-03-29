@@ -24,6 +24,11 @@ let legacyCache:
     }>
   | null = null;
 
+function logLegacyFallback(error: unknown): void {
+  const message = error instanceof Error ? error.message : String(error);
+  console.warn(`[blog-legacy] Falling back to static cards only: ${message}`);
+}
+
 function sliceBetween(source: string, startMarker: string, endMarker: string): string {
   const startIndex = source.indexOf(startMarker);
 
@@ -52,27 +57,35 @@ async function loadLegacyBlogData(): Promise<{
 }> {
   if (!legacyCache) {
     legacyCache = (async () => {
-      const detailPath = path.join(
-        process.cwd(),
-        'src',
-        'app',
-        'blog',
-        '[slug]',
-        'page.tsx',
-      );
+      try {
+        const detailPath = path.join(
+          process.cwd(),
+          'src',
+          'app',
+          'blog',
+          '[slug]',
+          'page.tsx',
+        );
 
-      const detailSourceRaw = await readFile(detailPath, 'utf8');
-      const detailSource = detailSourceRaw.replace(/\r\n/g, '\n');
-      const detailsLiteral = sliceBetween(
-        detailSource,
-        "const articles: Record<string, { title: { ar: string, fr: string }, content: { ar: string, fr: string } }> = ",
-        '\n\n  return articles[slug] ?? null;',
-      );
+        const detailSourceRaw = await readFile(detailPath, 'utf8');
+        const detailSource = detailSourceRaw.replace(/\r\n/g, '\n');
+        const detailsLiteral = sliceBetween(
+          detailSource,
+          "const articles: Record<string, { title: { ar: string, fr: string }, content: { ar: string, fr: string } }> = ",
+          '\n\n  return articles[slug] ?? null;',
+        );
 
-      return {
-        cards: STATIC_BLOG_CARDS,
-        details: evaluateLiteral<LegacyDetails>(detailsLiteral),
-      };
+        return {
+          cards: STATIC_BLOG_CARDS,
+          details: evaluateLiteral<LegacyDetails>(detailsLiteral),
+        };
+      } catch (error) {
+        logLegacyFallback(error);
+        return {
+          cards: STATIC_BLOG_CARDS,
+          details: {},
+        };
+      }
     })().catch((error) => {
       legacyCache = null;
       throw error;
