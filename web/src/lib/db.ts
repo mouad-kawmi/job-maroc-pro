@@ -29,5 +29,7 @@ export interface Job {
     full_description: string;
     title_fr: string;
     organization_fr: string;
+    meta_description?: string | null;
+    telegram_post?: string | null;
     created_at: string;
 }

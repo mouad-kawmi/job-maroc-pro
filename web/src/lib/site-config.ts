@@ -1,6 +1,6 @@
 const DEFAULT_SITE_NAME = 'JOB MAROC PRO';
 const DEFAULT_SITE_DESCRIPTION_AR =
-  'بوابتك الأولى لفرص العمل والمباريات في المغرب للقطاع العام والخاص.';
+  'بوابتك الاولى لفرص العمل والمباريات في المغرب للقطاع العام والخاص.';
 const DEFAULT_SITE_DESCRIPTION_FR =
   "Votre portail pour les offres d'emploi et concours au Maroc dans les secteurs public et prive.";
 const DEFAULT_SITE_URL = 'https://example.com';
@@ -43,7 +43,10 @@ function toMetadataBase(url: string): URL {
 const siteName = readEnv('NEXT_PUBLIC_SITE_NAME', DEFAULT_SITE_NAME);
 const siteUrl = normalizeUrl(readEnv('NEXT_PUBLIC_SITE_URL', DEFAULT_SITE_URL));
 const adsenseClientId = readEnv('NEXT_PUBLIC_ADSENSE_CLIENT_ID');
+const googleSiteVerification = readEnv('NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION');
+const gaMeasurementId = readEnv('NEXT_PUBLIC_GA_MEASUREMENT_ID');
 const hasAdsense = /^ca-pub-\d+$/.test(adsenseClientId);
+const hasAnalytics = /^G-[A-Z0-9]+$/i.test(gaMeasurementId);
 
 export const siteConfig = {
   name: siteName,
@@ -54,5 +57,8 @@ export const siteConfig = {
   brand: splitBrandName(siteName),
   adsenseClientId,
   adsensePublisherId: hasAdsense ? toPublisherId(adsenseClientId) : '',
+  googleSiteVerification,
+  gaMeasurementId,
+  hasAnalytics,
   hasAdsense,
 };

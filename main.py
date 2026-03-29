@@ -3,9 +3,11 @@ import json
 import time
 import os
 import sys
+import re
+from urllib.parse import urlparse
+from dotenv import load_dotenv
 
-# --- CONFIGURE YOUR SITE URL ---
-SITE_URL = "https://job-maroc.pro"
+load_dotenv()
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(errors="backslashreplace")
@@ -19,6 +21,108 @@ import telegram_notify
 import indexing_api
 
 DB_FILE = "web/jobs.db"
+MAX_META_DESCRIPTION_LENGTH = 160
+MAX_TELEGRAM_POST_LENGTH = 280
+PLACEHOLDER_SITE_HOSTS = {
+    "example.com",
+    "localhost",
+    "127.0.0.1",
+    "0.0.0.0",
+    "your-domain.com",
+}
+
+
+def get_public_site_url():
+    raw_url = (
+        os.getenv("SITE_URL", "").strip()
+        or os.getenv("NEXT_PUBLIC_SITE_URL", "").strip()
+    )
+    if not raw_url:
+        return ""
+
+    normalized = raw_url.rstrip("/")
+    parsed = urlparse(normalized)
+    host = (parsed.hostname or "").lower()
+
+    if parsed.scheme not in {"http", "https"} or not host:
+        print(f"[!] Invalid SITE_URL '{raw_url}'. Falling back to source links.")
+        return ""
+
+    if host in PLACEHOLDER_SITE_HOSTS or host.endswith(".localhost"):
+        return ""
+
+    return normalized
+
+
+SITE_URL = get_public_site_url()
+
+def _strip_rich_text(value):
+    text = str(value or "")
+    text = re.sub(r"```[\s\S]*?```", " ", text)
+    text = re.sub(r"`([^`]+)`", r"\1", text)
+    text = re.sub(r"!\[.*?\]\(.*?\)", " ", text)
+    text = re.sub(r"\[([^\]]+)\]\((.*?)\)", r"\1", text)
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = re.sub(r"^#{1,6}\s+", "", text, flags=re.MULTILINE)
+    text = re.sub(r"[*_>~\-]+", " ", text)
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
+
+def _truncate_text(value, limit=MAX_META_DESCRIPTION_LENGTH):
+    value = (value or "").strip()
+    if len(value) <= limit:
+        return value
+    return f"{value[:limit - 3].strip()}..."
+
+def _normalize_inline_text(value):
+    return re.sub(r"\s+", " ", str(value or "")).strip()
+
+def ensure_meta_description(job_data):
+    existing = _truncate_text(job_data.get("meta_description", ""))
+    if existing:
+        return existing
+
+    plain_text = _strip_rich_text(
+        job_data.get("content_html", "") or job_data.get("full_description", "")
+    )
+    if plain_text:
+        return _truncate_text(plain_text)
+
+    title = job_data.get("title", "").strip()
+    organization = job_data.get("organization", "").strip()
+    fallback = f"Consultez les details de l'offre {title} chez {organization} sur JOB MAROC PRO."
+    return _truncate_text(fallback)
+
+def ensure_telegram_post(job_data):
+    existing = _truncate_text(
+        _normalize_inline_text(job_data.get("telegram_post", "")),
+        limit=MAX_TELEGRAM_POST_LENGTH,
+    )
+    if existing:
+        return existing
+
+    title = _normalize_inline_text(job_data.get("title", ""))
+    organization = _normalize_inline_text(job_data.get("organization", ""))
+    deadline = _normalize_inline_text(job_data.get("deadline", ""))
+    preview = _normalize_inline_text(
+        job_data.get("meta_description", "")
+        or _strip_rich_text(job_data.get("content_html", "") or job_data.get("full_description", ""))
+    )
+
+    lines = []
+    headline = title or "Nouvelle opportunite au Maroc"
+    if organization:
+        headline = f"{headline} - {organization}"
+    lines.append(headline)
+
+    if deadline:
+        lines.append(f"Date limite: {deadline}")
+
+    if preview:
+        lines.append(preview)
+
+    lines.append("#emploi #maroc")
+    return _truncate_text("\n".join(lines), limit=MAX_TELEGRAM_POST_LENGTH)
 
 def init_db():
     # Create the web/ directory if it doesn't exist
@@ -78,6 +182,12 @@ def is_already_scraped(url):
     conn.close()
     return result is not None
 
+
+def build_public_job_url(job_id, source_url):
+    if SITE_URL:
+        return f"{SITE_URL}/jobs/{job_id}"
+    return source_url
+
 def main_flow():
     init_db()
 
@@ -96,6 +206,11 @@ def main_flow():
         return
 
     print(f"[+] Found {len(new_jobs)} NEW jobs.")
+
+    if SITE_URL:
+        print(f"[*] Public job links enabled with SITE_URL: {SITE_URL}")
+    else:
+        print("[*] SITE_URL not configured with a public domain. Google indexing is disabled and Telegram will use source links.")
 
     # 3. Setup Gemini/Groq
     model = ai_rewriter.setup_gemini()
@@ -140,14 +255,19 @@ def main_flow():
             job['title_fr'] = job.get('title', '')
             job['organization_fr'] = job.get('organization', '')
             
+        job['meta_description'] = ensure_meta_description(job)
+        job['telegram_post'] = ensure_telegram_post(job)
+
         # 4. Save to Database
         job_id = save_job_to_db(job)
         if job_id:
             print(f"[+] Saved to DB (ID: {job_id}): {job['title']}")
 
-            # --- NEXT: Notify Google (Google Indexing API) ---
-            new_post_url = f"{SITE_URL}/jobs/{job_id}"
-            indexing_api.notify_google_new_url(new_post_url)
+            new_post_url = build_public_job_url(job_id, job["url"])
+
+            # Only notify Google after a real public site URL is configured.
+            if SITE_URL:
+                indexing_api.notify_google_new_url(new_post_url)
 
             # 5. Notify Telegram
             msg = telegram_notify.build_job_message(job, new_post_url)

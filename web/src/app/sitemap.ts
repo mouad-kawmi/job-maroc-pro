@@ -1,7 +1,7 @@
-import { getDb } from '@/lib/db';
 import { MetadataRoute } from 'next';
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://job-maroc.pro';
+import { getDb } from '@/lib/db';
+import { listBlogPosts } from '@/lib/content';
+import { siteConfig } from '@/lib/site-config';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const db = await getDb();
@@ -9,14 +9,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 1. Fetch all jobs
   const jobs = await db.all("SELECT id, created_at FROM jobs ORDER BY id DESC");
   const jobUrls = jobs.map((job) => ({
-    url: `${SITE_URL}/jobs/${job.id}`,
+    url: `${siteConfig.url}/jobs/${job.id}`,
     lastModified: job.created_at || new Date().toISOString(),
     changeFrequency: 'daily' as const,
     priority: 0.8,
   }));
 
-  // 2. Blog posts (Hardcoded as seen in blog/page.tsx)
-  const blogArticles = [
+  // 2. Blog posts (static + admin managed)
+  const staticBlogArticles = [
     { slug: 'job-search-ads', date: '2025-03-22' },
     { slug: 'cv-writing', date: '2025-03-21' },
     { slug: 'interview-tips', date: '2025-03-20' },
@@ -28,9 +28,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { slug: 'employee-rights', date: '2025-03-14' },
     { slug: 'anapec-services', date: '2025-03-13' },
   ];
-  
-  const blogUrls = blogArticles.map((art) => ({
-    url: `${SITE_URL}/blog/${art.slug}`,
+  const dynamicBlogArticles = await listBlogPosts();
+  const allBlogArticles = [
+    ...dynamicBlogArticles.map((post) => ({
+      slug: post.slug,
+      date: post.date,
+    })),
+    ...staticBlogArticles,
+  ].filter(
+    (article, index, array) =>
+      array.findIndex((candidate) => candidate.slug === article.slug) === index,
+  );
+
+  const blogUrls = allBlogArticles.map((art) => ({
+    url: `${siteConfig.url}/blog/${art.slug}`,
     lastModified: art.date,
     changeFrequency: 'weekly' as const,
     priority: 0.6,
@@ -39,31 +50,31 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 3. Static Pages
   const staticPages = [
     {
-      url: SITE_URL,
+      url: siteConfig.url,
       lastModified: new Date().toISOString(),
       changeFrequency: 'daily' as const,
       priority: 1.0,
     },
     {
-      url: `${SITE_URL}/blog`,
+      url: `${siteConfig.url}/blog`,
       lastModified: new Date().toISOString(),
       changeFrequency: 'daily' as const,
       priority: 0.7,
     },
     {
-      url: `${SITE_URL}/about`,
+      url: `${siteConfig.url}/about`,
       lastModified: new Date().toISOString(),
       changeFrequency: 'monthly' as const,
       priority: 0.5,
     },
     {
-      url: `${SITE_URL}/contact`,
+      url: `${siteConfig.url}/contact`,
       lastModified: new Date().toISOString(),
       changeFrequency: 'monthly' as const,
       priority: 0.5,
     },
     {
-      url: `${SITE_URL}/privacy`,
+      url: `${siteConfig.url}/privacy`,
       lastModified: new Date().toISOString(),
       changeFrequency: 'monthly' as const,
       priority: 0.4,

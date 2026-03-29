@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 *.pyo
 .env
+.env.local
+.env.*.local
 .venv/
 venv/
 env/
@@ -15,7 +17,11 @@ web/out/
 web/*.log
 web/.env
 web/.env.local
+web/.env.development
 web/.env.production
+web/.env.*.local
+!.env.example
+!web/.env.example
 
 # OS
 .DS_Store

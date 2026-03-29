@@ -3,18 +3,13 @@ import { notFound } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { AdSlot } from '@/components/AdSlot';
+import { getBlogPostBySlug } from '@/lib/content';
 
 function AdSpot({ label, height = 'min-h-[90px]' }: { label: string, height?: string }) {
   return <AdSlot label={label} heightClassName={height} />;
 }
 
-export default async function BlogPost(props: { params: Promise<{ slug: string }>, searchParams: Promise<{ [key: string]: string | undefined }> }) {
-  const params = await props.params;
-  const searchParams = await props.searchParams;
-  const lang = (searchParams.lang === 'fr' ? 'fr' : 'ar') as 'ar' | 'fr';
-  const dir = lang === 'ar' ? 'rtl' : 'ltr';
-
-  // Restoration of FULL rich blog articles content
+function getStaticBlogArticle(slug: string) {
   const articles: Record<string, { title: { ar: string, fr: string }, content: { ar: string, fr: string } }> = {
     'job-search-ads': {
         title: { ar: 'الدليل الشامل: كيف تجد إعلانات التوظيف في JOB MAROC PRO', fr: 'Le Guide Complet: Comment trouver les meilleures annonces d\'emploi' },
@@ -291,8 +286,32 @@ export default async function BlogPost(props: { params: Promise<{ slug: string }
     }
   };
 
-  const article = articles[params.slug];
-  if (!article) return notFound();
+  return articles[slug] ?? null;
+}
+
+export default async function BlogPost(props: { params: Promise<{ slug: string }>, searchParams: Promise<{ [key: string]: string | undefined }> }) {
+  const params = await props.params;
+  const searchParams = await props.searchParams;
+  const lang = (searchParams.lang === 'fr' ? 'fr' : 'ar') as 'ar' | 'fr';
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+  const dynamicArticle = await getBlogPostBySlug(params.slug);
+  const staticArticle = dynamicArticle
+    ? null
+    : getStaticBlogArticle(params.slug);
+
+  if (!staticArticle && !dynamicArticle) return notFound();
+
+  const article = staticArticle || {
+    title: {
+      ar: dynamicArticle!.titleAr,
+      fr: dynamicArticle!.titleFr,
+    },
+    content: {
+      ar: dynamicArticle!.contentAr,
+      fr: dynamicArticle!.contentFr,
+    },
+  };
 
   const t = {
     ar: { back: '← العودة للمدونة', readingTime: 'دقائق للقراءة', share: 'شارك المقال' },
