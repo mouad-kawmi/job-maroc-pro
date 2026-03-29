@@ -14,8 +14,26 @@ DEFAULT_HEADERS = {
         "Chrome/91.0.4472.124 Safari/537.36"
     )
 }
+INSECURE_FALLBACK_HOSTS = ("oncf.ma", "onda.ma")
 ONCF_RECRUITMENT_URL = "https://www.oncf.ma/fr/Entreprise/Faire-carriere-a-l-oncf/Recrutement"
 ONCF_ORGANIZATION = "Office National des Chemins de Fer (ONCF)"
+ONDA_ORGANIZATION = "Office National Des Aeroports (ONDA)"
+ONDA_SOURCE_PAGES = [
+    {
+        "url": "https://www.onda.ma/Je-d%C3%A9couvre-ONDA/Ressources-humaines/Recrutement-2025",
+        "label": "Recrutement 2025",
+        "default_posts": "N/A",
+    },
+    {
+        "url": "https://www.onda.ma/Je-d%C3%A9couvre-ONDA/Ressources-humaines/Op%C3%A9ration-de-recrutement-Pompiers-d%27A%C3%A9rodrome",
+        "label": "Pompiers d'Aerodrome",
+        "default_posts": "43 postes",
+    },
+]
+
+
+def host_supports_insecure_fallback(hostname):
+    return any(hostname.endswith(suffix) or suffix in hostname for suffix in INSECURE_FALLBACK_HOSTS)
 
 
 def fetch_page(url, timeout=20, allow_insecure_fallback=False):
@@ -23,7 +41,7 @@ def fetch_page(url, timeout=20, allow_insecure_fallback=False):
         response = requests.get(url, headers=DEFAULT_HEADERS, timeout=timeout)
     except requests.exceptions.SSLError:
         hostname = (urlparse(url).hostname or "").lower()
-        if not allow_insecure_fallback or "oncf.ma" not in hostname:
+        if not allow_insecure_fallback or not host_supports_insecure_fallback(hostname):
             raise
 
         print(f"[!] SSL verification failed for {hostname}. Retrying with verify=False...")
@@ -44,14 +62,15 @@ def get_job_details(url):
     try:
         parsed_url = urlparse(url)
         hostname = (parsed_url.hostname or "").lower()
+        path_lower = parsed_url.path.lower()
 
-        if parsed_url.path.lower().endswith(".pdf"):
+        if path_lower.endswith(".pdf") or "/media/files/" in path_lower:
             return f"PDF officiel: {url}"
 
         response = fetch_page(
             url,
             timeout=15,
-            allow_insecure_fallback="oncf.ma" in hostname,
+            allow_insecure_fallback=host_supports_insecure_fallback(hostname),
         )
         soup = BeautifulSoup(response.text, "html.parser")
 
@@ -88,6 +107,38 @@ def get_job_details(url):
                 summary_lines.append(f"Date de publication: {publication_date}")
             if pdf_url:
                 summary_lines.append(f"PDF officiel: {pdf_url}")
+
+            return "\n".join(summary_lines)
+
+        if "onda.ma" in hostname:
+            title = ""
+            for selector in ["h1", "title"]:
+                node = soup.select_one(selector)
+                if node:
+                    title = node.get_text(" ", strip=True)
+                    if title:
+                        break
+            if not title:
+                title = "Annonce officielle ONDA"
+            plain_text = soup.get_text("\n", strip=True)
+            lowered_text = plain_text.lower()
+            snippet = ""
+
+            for marker, backtrack in [
+                ("lance un concours pour le recrutement de", 0),
+                ("affectation :", 220),
+                ("le concours est ouvert aux candidats", 0),
+                ("avis de relance", 0),
+            ]:
+                index = lowered_text.find(marker)
+                if index != -1:
+                    start = max(0, index - backtrack)
+                    snippet = plain_text[start:start + 1800].strip()
+                    break
+
+            summary_lines = ["Annonce officielle ONDA", f"Intitule: {title}"]
+            if snippet:
+                summary_lines.append(snippet)
 
             return "\n".join(summary_lines)
 
@@ -230,6 +281,92 @@ def clean_oncf_title(raw_title):
     return title or raw_title.strip()
 
 
+def clean_onda_title(raw_title, source_label):
+    title = re.sub(r'^[\.\-\s]+', '', raw_title or '').strip()
+
+    if title.lower() == "avis de recrutement" and source_label:
+        title = source_label
+    elif source_label and title.lower().startswith("avis de relance"):
+        title = f"{title} - {source_label}"
+
+    title = re.sub(r'\s+', ' ', title).strip(" -")
+    return title or source_label
+
+
+def extract_onda_posts(raw_title, default_posts):
+    text = raw_title or ""
+    match = re.search(r'\((\d+)\s*postes?\)', text, re.IGNORECASE)
+    if match:
+        return f"{match.group(1)} postes"
+    return default_posts
+
+
+def is_onda_result_link(raw_title):
+    lowered = (raw_title or "").casefold()
+    excluded_keywords = [
+        "liste des candidats",
+        "candidats retenus",
+        "resultat final",
+        "epreuve orale",
+        "epreuve ecrite",
+    ]
+    return any(keyword in lowered for keyword in excluded_keywords)
+
+
+def scrape_onda_recruitment():
+    print("[*] SCRAPING SOURCE: ONDA Recrutement...")
+    jobs = []
+    seen_urls = set()
+
+    for source in ONDA_SOURCE_PAGES:
+        try:
+            response = fetch_page(
+                source["url"],
+                timeout=20,
+                allow_insecure_fallback=True,
+            )
+            soup = BeautifulSoup(response.text, "html.parser")
+        except Exception as e:
+            print(f"[!] Error scraping ONDA page {source['url']}: {e}")
+            continue
+
+        for link in soup.find_all("a", href=True):
+            raw_title = re.sub(r'\s+', ' ', link.get_text(" ", strip=True)).strip()
+            if not raw_title or is_onda_result_link(raw_title):
+                continue
+
+            normalized_title = re.sub(r'^[\.\-\s]+', '', raw_title).strip()
+            lowered = normalized_title.casefold()
+            if lowered in {"recrutement", "recrutement 2025"}:
+                continue
+
+            include_link = lowered.startswith("avis de") or "postes" in lowered
+            if not include_link:
+                continue
+
+            job_url = urljoin(source["url"], link["href"].strip())
+            if job_url in seen_urls:
+                continue
+
+            title = clean_onda_title(normalized_title, source["label"])
+            if not title:
+                continue
+
+            full_title = f"{title} - ONDA" if "onda" not in title.casefold() else title
+            jobs.append(
+                {
+                    "organization": ONDA_ORGANIZATION,
+                    "title": full_title,
+                    "posts": extract_onda_posts(normalized_title, source["default_posts"]),
+                    "deadline": "N/A",
+                    "url": job_url,
+                }
+            )
+            seen_urls.add(job_url)
+
+    return jobs
+
+
 def scrape_oncf_recruitment():
     print("[*] SCRAPING SOURCE: ONCF Recrutement...")
     try:
@@ -304,6 +441,12 @@ def scrape_all_sources():
     # Scrape ONCF Recrutement
     oncf_jobs = scrape_oncf_recruitment()
     for j in oncf_jobs:
+        if j['url'] not in seen_urls:
+            total_jobs.append(j); seen_urls.add(j['url'])
+
+    # Scrape ONDA Recrutement
+    onda_jobs = scrape_onda_recruitment()
+    for j in onda_jobs:
         if j['url'] not in seen_urls:
             total_jobs.append(j); seen_urls.add(j['url'])
 
