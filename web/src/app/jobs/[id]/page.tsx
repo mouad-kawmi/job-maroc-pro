@@ -27,6 +27,7 @@ type JobPageProps = {
 type JobRecord = Job & {
   meta_description?: string | null;
   telegram_post?: string | null;
+  updated_at?: string;
 };
 
 const ARABIC_MONTHS: Record<string, number> = {
@@ -52,22 +53,26 @@ const ARABIC_MONTHS: Record<string, number> = {
 const FRENCH_MONTHS: Record<string, number> = {
   janvier: 0,
   fevrier: 1,
-  février: 1,
+  'f\u00e9vrier': 1,
   mars: 2,
   avril: 3,
   mai: 4,
   juin: 5,
   juillet: 6,
   aout: 7,
-  août: 7,
   septembre: 8,
   octobre: 9,
   novembre: 10,
   decembre: 11,
-  décembre: 11,
 };
 
-function AdSpot({ label, height = 'min-h-[100px]' }: { label: string; height?: string }) {
+function AdSpot({
+  label,
+  height = 'min-h-[100px]',
+}: {
+  label: string;
+  height?: string;
+}) {
   return <AdSlot label={label} heightClassName={height} />;
 }
 
@@ -85,7 +90,9 @@ function getLocalizedTitle(job: JobRecord, lang: Lang): string {
 }
 
 function getLocalizedOrganization(job: JobRecord, lang: Lang): string {
-  return lang === 'fr' ? job.organization_fr?.trim() || job.organization : job.organization;
+  return lang === 'fr'
+    ? job.organization_fr?.trim() || job.organization
+    : job.organization;
 }
 
 function buildJobPath(id: number | string, lang: Lang): string {
@@ -94,6 +101,36 @@ function buildJobPath(id: number | string, lang: Lang): string {
 
 function buildJobUrl(id: number | string, lang: Lang): string {
   return `${siteConfig.url}${buildJobPath(id, lang)}`;
+}
+
+function getOfficialSourceLabel(job: JobRecord, lang: Lang): string {
+  try {
+    const hostname = new URL(job.url).hostname.replace(/^www\./i, '');
+    return hostname || getLocalizedOrganization(job, lang);
+  } catch {
+    return getLocalizedOrganization(job, lang);
+  }
+}
+
+function formatDateTime(
+  value: string | undefined,
+  lang: Lang,
+  fallback: string,
+): string {
+  if (!value) {
+    return fallback;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat(lang === 'ar' ? 'ar-MA' : 'fr-FR', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
 }
 
 function toPlainText(value: string): string {
@@ -114,7 +151,7 @@ function truncateText(value: string, length: number): string {
     return value;
   }
 
-  return `${value.slice(0, Math.max(0, length - 1)).trim()}…`;
+  return `${value.slice(0, Math.max(0, length - 3)).trim()}...`;
 }
 
 function getJobDescription(job: JobRecord, lang: Lang): string {
@@ -156,7 +193,9 @@ function parseDeadlineToIso(deadline?: string): string | undefined {
   }
 
   const normalized = deadline.replace(/\s+/g, ' ').trim();
-  const dateMatch = normalized.match(/^(\d{1,2})\s+([^\s]+)\s+(\d{4})(?:\s*[-/]\s*(\d{1,2})[:h](\d{1,2}))?$/i);
+  const dateMatch = normalized.match(
+    /^(\d{1,2})\s+([^\s]+)\s+(\d{4})(?:\s*[-/]\s*(\d{1,2})[:h](\d{1,2}))?$/i,
+  );
 
   if (!dateMatch) {
     return undefined;
@@ -171,7 +210,9 @@ function parseDeadlineToIso(deadline?: string): string | undefined {
   const monthIndex =
     ARABIC_MONTHS[dateMatch[2]] ??
     FRENCH_MONTHS[monthName] ??
-    FRENCH_MONTHS[monthName.normalize('NFD').replace(/[\u0300-\u036f]/g, '')];
+    FRENCH_MONTHS[
+      monthName.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    ];
 
   if (monthIndex === undefined) {
     return undefined;
@@ -273,6 +314,7 @@ function buildJobPostingSchema(job: JobRecord, lang: Lang) {
     description: getJobDescription(job, lang),
     url: buildJobUrl(job.id, lang),
     datePosted: toIsoDate(job.created_at),
+    dateModified: toIsoDate(job.updated_at || job.created_at),
     validThrough: parseDeadlineToIso(job.deadline),
     inLanguage: lang === 'fr' ? 'fr' : 'ar',
     hiringOrganization: {
@@ -297,7 +339,15 @@ function getUi(lang: Lang) {
       expired: 'انتهى الوقت',
       expiredCta: 'انتهت الصلاحية',
       expiredNote: 'نأسف، لقد انتهى أجل التقديم لهذه المباراة.',
-      activeNote: 'للتقديم الرسمي، توجه مباشرة الى الموقع الرسمي المعلن في الرابط التالي.',
+      activeNote:
+        'للتقديم الرسمي، توجه مباشرة الى الموقع الرسمي المعلن في الرابط التالي.',
+      trustTitle: 'معلومات المصدر والتحديث',
+      sourceOfficial: 'المصدر الرسمي',
+      publicationDate: 'تاريخ النشر',
+      updateDate: 'تاريخ آخر تحديث',
+      officialLink: 'الرابط الرسمي',
+      openOfficialLink: 'فتح الرابط الرسمي',
+      unavailable: 'غير متاح',
     },
     fr: {
       back: '← Retour a la liste',
@@ -306,7 +356,15 @@ function getUi(lang: Lang) {
       expired: 'Expiree',
       expiredCta: 'Expiree',
       expiredNote: 'Desole, le delai de candidature pour cette offre est expire.',
-      activeNote: 'Pour postuler officiellement, consultez le lien source ci-dessous.',
+      activeNote:
+        'Pour postuler officiellement, consultez le lien source ci-dessous.',
+      trustTitle: 'Source et fraicheur de la fiche',
+      sourceOfficial: 'Source officielle',
+      publicationDate: 'Date de publication',
+      updateDate: 'Date de mise a jour',
+      officialLink: 'Lien officiel',
+      openOfficialLink: 'Ouvrir le lien officiel',
+      unavailable: 'Non disponible',
     },
   }[lang];
 }
@@ -391,13 +449,26 @@ export default async function JobDetail(props: JobPageProps) {
           checklistTitle: 'ماذا تفعل قبل التقديم؟',
           tipsTitle: 'نصائح تزيد حظوظك',
         };
+
   const opportunitySummary = getOpportunitySummary(job, lang);
   const bestFitSignals = getBestFitSignals(job, lang);
   const applicationChecklist = getApplicationChecklist(job, lang);
   const applicationTips = getApplicationTips(lang);
+  const officialSourceLabel = getOfficialSourceLabel(job, lang);
+  const officialLink = job.url?.trim() || '';
+  const publishedAt = formatDateTime(job.created_at, lang, t.unavailable);
+  const updatedAt = formatDateTime(
+    job.updated_at || job.created_at,
+    lang,
+    t.unavailable,
+  );
 
   return (
-    <div className="min-h-screen font-sans flex flex-col" style={{ background: '#f1f5f9' }} dir={dir}>
+    <div
+      className="min-h-screen flex flex-col font-sans"
+      style={{ background: '#f1f5f9' }}
+      dir={dir}
+    >
       <Navbar lang={lang} />
 
       <script
@@ -405,47 +476,111 @@ export default async function JobDetail(props: JobPageProps) {
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(jobPostingSchema) }}
       />
 
-      <div className="container mx-auto px-4 max-w-4xl mt-4">
-        <AdSpot label="728x90 - Leaderboard (Top of Job Detail)" height="min-h-[90px]" />
+      <div className="container mx-auto mt-4 max-w-4xl px-4">
+        <AdSpot
+          label="728x90 - Leaderboard (Top of Job Detail)"
+          height="min-h-[90px]"
+        />
       </div>
 
-      <main className="container mx-auto px-4 max-w-4xl py-6 flex-grow">
+      <main className="container mx-auto max-w-4xl flex-grow px-4 py-6">
         <Link
           href={`/?lang=${lang}`}
-          className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-blue-600 mb-5 transition-colors"
+          className="mb-5 inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition-colors hover:text-blue-600"
         >
           {t.back}
         </Link>
 
-        <article className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="bg-gradient-to-r from-[#0f2167] to-[#1a3a8f] p-6 md:p-8 text-white">
-            <div className="flex flex-wrap gap-2 mb-4">
-              <span className="bg-white/15 backdrop-blur-sm border border-white/20 text-white text-xs font-black px-3 py-1 rounded-full">
+        <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div className="bg-gradient-to-r from-[#0f2167] to-[#1a3a8f] p-6 text-white md:p-8">
+            <div className="mb-4 flex flex-wrap gap-2">
+              <span className="rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-black text-white backdrop-blur-sm">
                 {getLocalizedOrganization(job, lang)}
               </span>
               <span
-                className={`text-white text-xs font-bold px-3 py-1 rounded-full border ${
-                  isExpired(job.deadline) ? 'bg-red-600 border-red-400 animate-pulse' : 'bg-red-500/80 border-red-400'
+                className={`rounded-full border px-3 py-1 text-xs font-bold text-white ${
+                  isExpired(job.deadline)
+                    ? 'animate-pulse border-red-400 bg-red-600'
+                    : 'border-red-400 bg-red-500/80'
                 }`}
               >
                 {t.deadline} {isExpired(job.deadline) ? t.expired : job.deadline}
               </span>
-              <span className="bg-green-500/80 text-white text-xs font-bold px-3 py-1 rounded-full border border-green-400">
+              <span className="rounded-full border border-green-400 bg-green-500/80 px-3 py-1 text-xs font-bold text-white">
                 {formatPostsLabel(job.posts, lang)}
               </span>
             </div>
-            <h1 className="text-xl md:text-3xl font-black leading-tight">
+            <h1 className="text-xl font-black leading-tight md:text-3xl">
               {getLocalizedTitle(job, lang)}
             </h1>
           </div>
 
-          <div className="px-6 md:px-8 pt-6">
-            <AdSpot label="336x280 - Rectangle Ad (Under Header)" height="min-h-[90px]" />
+          <div className="px-6 pt-6 md:px-8">
+            <AdSpot
+              label="336x280 - Rectangle Ad (Under Header)"
+              height="min-h-[90px]"
+            />
           </div>
 
-          <div className="px-6 md:px-8 py-6">
+          <div className="px-6 pt-6 md:px-8">
+            <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <h2 className="text-lg font-black text-slate-900">
+                {t.trustTitle}
+              </h2>
+              <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700">
+                    {t.sourceOfficial}
+                  </p>
+                  <p className="mt-2 break-words text-sm font-black text-slate-900">
+                    {officialSourceLabel}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700">
+                    {t.publicationDate}
+                  </p>
+                  <p className="mt-2 text-sm font-black text-slate-900">
+                    {publishedAt}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">
+                    {t.updateDate}
+                  </p>
+                  <p className="mt-2 text-sm font-black text-slate-900">
+                    {updatedAt}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                    {t.officialLink}
+                  </p>
+                  {officialLink ? (
+                    <a
+                      href={officialLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 inline-flex text-sm font-black text-blue-600 transition-colors hover:text-blue-800"
+                    >
+                      {t.openOfficialLink}
+                    </a>
+                  ) : (
+                    <p className="mt-2 text-sm font-black text-slate-400">
+                      {t.unavailable}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div className="px-6 py-6 md:px-8">
             <div
-              className="prose prose-slate max-w-none prose-headings:font-black prose-headings:text-slate-800 prose-h2:text-xl prose-h3:text-base prose-p:text-slate-600 prose-p:leading-relaxed prose-li:text-slate-600 prose-strong:text-slate-800 prose-a:text-blue-600"
+              className="prose prose-slate max-w-none prose-headings:font-black prose-headings:text-slate-800 prose-h2:text-xl prose-h3:text-base prose-p:leading-relaxed prose-p:text-slate-600 prose-li:text-slate-600 prose-strong:text-slate-800 prose-a:text-blue-600"
               dir="auto"
             >
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -454,19 +589,25 @@ export default async function JobDetail(props: JobPageProps) {
             </div>
           </div>
 
-          <div className="px-6 md:px-8 pb-8">
+          <div className="px-6 pb-8 md:px-8">
             <div className="grid gap-5 lg:grid-cols-2">
               <section className="rounded-2xl border border-blue-100 bg-blue-50/70 p-5">
-                <h2 className="text-lg font-black text-slate-900">{valueCopy.summaryTitle}</h2>
-                <p className="mt-3 text-sm leading-7 text-slate-700">{opportunitySummary}</p>
+                <h2 className="text-lg font-black text-slate-900">
+                  {valueCopy.summaryTitle}
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-slate-700">
+                  {opportunitySummary}
+                </p>
               </section>
 
               <section className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-5">
-                <h2 className="text-lg font-black text-slate-900">{valueCopy.fitTitle}</h2>
+                <h2 className="text-lg font-black text-slate-900">
+                  {valueCopy.fitTitle}
+                </h2>
                 <ul className="mt-3 space-y-3 text-sm leading-7 text-slate-700">
                   {bestFitSignals.map((item) => (
                     <li key={item} className="flex gap-3">
-                      <span className="mt-1 text-emerald-600">•</span>
+                      <span className="mt-1 text-emerald-600">&bull;</span>
                       <span>{item}</span>
                     </li>
                   ))}
@@ -474,11 +615,13 @@ export default async function JobDetail(props: JobPageProps) {
               </section>
 
               <section className="rounded-2xl border border-amber-100 bg-amber-50/70 p-5">
-                <h2 className="text-lg font-black text-slate-900">{valueCopy.checklistTitle}</h2>
+                <h2 className="text-lg font-black text-slate-900">
+                  {valueCopy.checklistTitle}
+                </h2>
                 <ul className="mt-3 space-y-3 text-sm leading-7 text-slate-700">
                   {applicationChecklist.map((item) => (
                     <li key={item} className="flex gap-3">
-                      <span className="mt-1 text-amber-600">•</span>
+                      <span className="mt-1 text-amber-600">&bull;</span>
                       <span>{item}</span>
                     </li>
                   ))}
@@ -486,11 +629,13 @@ export default async function JobDetail(props: JobPageProps) {
               </section>
 
               <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                <h2 className="text-lg font-black text-slate-900">{valueCopy.tipsTitle}</h2>
+                <h2 className="text-lg font-black text-slate-900">
+                  {valueCopy.tipsTitle}
+                </h2>
                 <ul className="mt-3 space-y-3 text-sm leading-7 text-slate-700">
                   {applicationTips.map((item) => (
                     <li key={item} className="flex gap-3">
-                      <span className="mt-1 text-slate-500">•</span>
+                      <span className="mt-1 text-slate-500">&bull;</span>
                       <span>{item}</span>
                     </li>
                   ))}
@@ -499,50 +644,58 @@ export default async function JobDetail(props: JobPageProps) {
             </div>
           </div>
 
-          <div className="px-6 md:px-8 pb-6">
-            <AdSpot label="728x90 - In-Content Banner (Mid Article)" height="min-h-[90px]" />
+          <div className="px-6 pb-6 md:px-8">
+            <AdSpot
+              label="728x90 - In-Content Banner (Mid Article)"
+              height="min-h-[90px]"
+            />
           </div>
 
-          <div className="px-6 md:px-8 pb-8">
+          <div className="px-6 pb-8 md:px-8">
             <div
-              className={`rounded-2xl p-6 text-center border ${
+              className={`rounded-2xl border p-6 text-center ${
                 isExpired(job.deadline)
-                  ? 'bg-red-50 border-red-200'
-                  : 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200'
+                  ? 'border-red-200 bg-red-50'
+                  : 'border-green-200 bg-gradient-to-r from-green-50 to-emerald-50'
               }`}
             >
               <p
-                className={`text-sm font-bold mb-4 ${
+                className={`mb-4 text-sm font-bold ${
                   isExpired(job.deadline) ? 'text-red-600' : 'text-slate-600'
                 }`}
               >
                 {isExpired(job.deadline) ? t.expiredNote : t.activeNote}
               </p>
 
-              {!isExpired(job.deadline) ? (
+              {!isExpired(job.deadline) && officialLink ? (
                 <a
-                  href={job.url}
+                  href={officialLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block bg-green-600 hover:bg-green-700 active:scale-95 text-white font-black py-4 px-10 rounded-2xl shadow-lg transition-all text-base"
+                  className="inline-block rounded-2xl bg-green-600 px-10 py-4 text-base font-black text-white shadow-lg transition-all hover:bg-green-700 active:scale-95"
                 >
                   {t.apply}
                 </a>
               ) : (
-                <div className="inline-block bg-slate-300 text-slate-500 font-black py-4 px-10 rounded-2xl cursor-not-allowed text-base">
-                  {t.expiredCta}
+                <div className="inline-block cursor-not-allowed rounded-2xl bg-slate-300 px-10 py-4 text-base font-black text-slate-500">
+                  {isExpired(job.deadline) ? t.expiredCta : t.unavailable}
                 </div>
               )}
 
-              {!isExpired(job.deadline) && (
-                <p className="mt-4 text-slate-400 text-xs break-all">{job.url}</p>
+              {!isExpired(job.deadline) && officialLink && (
+                <p className="mt-4 break-all text-xs text-slate-400">
+                  {officialLink}
+                </p>
               )}
             </div>
           </div>
         </article>
 
         <div className="mt-8">
-          <AdSpot label="728x90 - Horizontal Banner (Below Article)" height="min-h-[90px]" />
+          <AdSpot
+            label="728x90 - Horizontal Banner (Below Article)"
+            height="min-h-[90px]"
+          />
         </div>
       </main>
 

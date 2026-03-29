@@ -45,4 +45,5 @@ export interface Job {
     meta_description?: string | null;
     telegram_post?: string | null;
     created_at: string;
+    updated_at?: string;
 }
