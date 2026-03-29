@@ -88,6 +88,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly' as const,
       priority: 0.4,
     },
+    {
+      url: `${siteConfig.url}/terms`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.4,
+    },
+    {
+      url: `${siteConfig.url}/disclaimer`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.4,
+    },
+    {
+      url: `${siteConfig.url}/editorial-policy`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.5,
+    },
   ];
 
   return [...staticPages, ...guideUrls, ...jobUrls, ...blogUrls];

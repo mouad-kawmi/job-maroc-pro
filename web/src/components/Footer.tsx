@@ -14,6 +14,9 @@ export async function Footer({ lang }: { lang: 'ar' | 'fr' }) {
       faq: '\u0627\u0644\u0623\u0633\u0626\u0644\u0629 \u0627\u0644\u0634\u0627\u0626\u0639\u0629',
       about: '\u0645\u0646 \u0646\u062d\u0646',
       privacy: '\u0633\u064a\u0627\u0633\u0629 \u0627\u0644\u062e\u0635\u0648\u0635\u064a\u0629',
+      terms: '\u0634\u0631\u0648\u0637 \u0627\u0644\u0627\u0633\u062a\u062e\u062f\u0627\u0645',
+      disclaimer: '\u0625\u062e\u0644\u0627\u0621 \u0627\u0644\u0645\u0633\u0624\u0648\u0644\u064a\u0629',
+      editorial: '\u0627\u0644\u0633\u064a\u0627\u0633\u0629 \u0627\u0644\u062a\u062d\u0631\u064a\u0631\u064a\u0629',
       contact: '\u0627\u062a\u0635\u0644 \u0628\u0646\u0627',
       contactUs: '\u0631\u0627\u0633\u0644\u0646\u0627',
       adminLabel: '\u0648\u0644\u0648\u062c \u0627\u0644\u0627\u062f\u0627\u0631\u0629',
@@ -28,6 +31,9 @@ export async function Footer({ lang }: { lang: 'ar' | 'fr' }) {
       faq: 'FAQ',
       about: 'A propos',
       privacy: 'Confidentialite',
+      terms: 'Conditions',
+      disclaimer: 'Avertissement',
+      editorial: 'Politique editoriale',
       contact: 'Contact',
       contactUs: 'Nous ecrire',
       adminLabel: 'Espace admin',
@@ -75,6 +81,24 @@ export async function Footer({ lang }: { lang: 'ar' | 'fr' }) {
             className="text-sm font-bold uppercase tracking-widest text-slate-500 transition-colors hover:text-blue-600"
           >
             {t.privacy}
+          </Link>
+          <Link
+            href={`/terms?lang=${lang}`}
+            className="text-sm font-bold uppercase tracking-widest text-slate-500 transition-colors hover:text-blue-600"
+          >
+            {t.terms}
+          </Link>
+          <Link
+            href={`/disclaimer?lang=${lang}`}
+            className="text-sm font-bold uppercase tracking-widest text-slate-500 transition-colors hover:text-blue-600"
+          >
+            {t.disclaimer}
+          </Link>
+          <Link
+            href={`/editorial-policy?lang=${lang}`}
+            className="text-sm font-bold uppercase tracking-widest text-slate-500 transition-colors hover:text-blue-600"
+          >
+            {t.editorial}
           </Link>
           <Link
             href={`/contact?lang=${lang}`}
