@@ -56,6 +56,13 @@ def get_public_site_url():
 
 SITE_URL = get_public_site_url()
 
+
+def _has_meaningful_text(value):
+    normalized = _normalize_inline_text(value)
+    if not normalized:
+        return False
+    return normalized.upper() not in {"N/A", "NA", "NONE", "NULL", "-"}
+
 def _strip_rich_text(value):
     text = str(value or "")
     text = re.sub(r"```[\s\S]*?```", " ", text)
@@ -115,7 +122,7 @@ def ensure_telegram_post(job_data):
         headline = f"{headline} - {organization}"
     lines.append(headline)
 
-    if deadline:
+    if _has_meaningful_text(deadline):
         lines.append(f"Date limite: {deadline}")
 
     if preview:

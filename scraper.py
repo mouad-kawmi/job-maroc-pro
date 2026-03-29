@@ -3,16 +3,93 @@ from bs4 import BeautifulSoup
 import json
 import time
 import re
+import warnings
+from urllib.parse import urljoin, urlparse
+from urllib3.exceptions import InsecureRequestWarning
+
+DEFAULT_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/91.0.4472.124 Safari/537.36"
+    )
+}
+ONCF_RECRUITMENT_URL = "https://www.oncf.ma/fr/Entreprise/Faire-carriere-a-l-oncf/Recrutement"
+ONCF_ORGANIZATION = "Office National des Chemins de Fer (ONCF)"
+
+
+def fetch_page(url, timeout=20, allow_insecure_fallback=False):
+    try:
+        response = requests.get(url, headers=DEFAULT_HEADERS, timeout=timeout)
+    except requests.exceptions.SSLError:
+        hostname = (urlparse(url).hostname or "").lower()
+        if not allow_insecure_fallback or "oncf.ma" not in hostname:
+            raise
+
+        print(f"[!] SSL verification failed for {hostname}. Retrying with verify=False...")
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", InsecureRequestWarning)
+            response = requests.get(
+                url,
+                headers=DEFAULT_HEADERS,
+                timeout=timeout,
+                verify=False,
+            )
+
+    response.raise_for_status()
+    response.encoding = response.apparent_encoding or "utf-8"
+    return response
 
 def get_job_details(url):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
     try:
-        response = requests.get(url, headers=headers, timeout=15)
-        response.raise_for_status()
-        response.encoding = 'utf-8'
-        soup = BeautifulSoup(response.text, 'html.parser')
+        parsed_url = urlparse(url)
+        hostname = (parsed_url.hostname or "").lower()
+
+        if parsed_url.path.lower().endswith(".pdf"):
+            return f"PDF officiel: {url}"
+
+        response = fetch_page(
+            url,
+            timeout=15,
+            allow_insecure_fallback="oncf.ma" in hostname,
+        )
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        if "oncf.ma" in hostname:
+            title_selectors = [
+                "h1",
+                ".block-slider-detail_title",
+                ".block-page-detail_title",
+                ".text-page_title",
+                ".text-riche",
+            ]
+            title = ""
+            for selector in title_selectors:
+                node = soup.select_one(selector)
+                if node:
+                    title = node.get_text(" ", strip=True)
+                    if title:
+                        break
+
+            date_node = soup.select_one(".ezdatetime-field")
+            publication_date = date_node.get_text(" ", strip=True) if date_node else ""
+
+            pdf_url = ""
+            for link in soup.select('a[href]'):
+                href = link.get("href", "")
+                if ".pdf" in href.lower():
+                    pdf_url = urljoin(url, href)
+                    break
+
+            summary_lines = ["Annonce officielle ONCF"]
+            if title:
+                summary_lines.append(f"Intitule: {title}")
+            if publication_date:
+                summary_lines.append(f"Date de publication: {publication_date}")
+            if pdf_url:
+                summary_lines.append(f"PDF officiel: {pdf_url}")
+
+            return "\n".join(summary_lines)
 
         # Emploi-Public details
         main_content = soup.find('div', {'id': 'detail_concours'})
@@ -31,18 +108,13 @@ def get_job_details(url):
 
 def scrape_emploi_public_list(category_url, max_pages=3):
     all_jobs = []
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
 
     for page in range(1, max_pages + 1):
         url = f"{category_url}?page={page}" if page > 1 else category_url
         print(f"[*] Scanning {url}...")
 
         try:
-            response = requests.get(url, headers=headers, timeout=20)
-            response.raise_for_status()
-            response.encoding = 'utf-8'
+            response = fetch_page(url, timeout=20)
         except Exception as e:
             print(f"[!] Error fetching site (Page {page}): {e}")
             continue
@@ -92,12 +164,10 @@ def scrape_alwadifa_maroc():
     """Scrapes Alwadifa-Maroc.com homepage for latest offers"""
     print("[*] SCRAPING SOURCE: Alwadifa-Maroc...")
     url = "https://www.alwadifa-maroc.com/"
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
     current_year = time.gmtime().tm_year
 
     try:
-        response = requests.get(url, headers=headers, timeout=20)
-        response.encoding = 'utf-8'
+        response = fetch_page(url, timeout=20)
         soup = BeautifulSoup(response.text, 'html.parser')
 
         links = soup.find_all('a', href=re.compile(r'/offre/show/id/\d+'))
@@ -153,6 +223,67 @@ def scrape_alwadifa_maroc():
         print(f"[!] Error scraping Alwadifa-Maroc: {e}")
         return []
 
+
+def clean_oncf_title(raw_title):
+    title = re.sub(r'^\s*Avis de recrutement\s*:\s*', '', raw_title, flags=re.IGNORECASE)
+    title = re.sub(r'\s+', ' ', title).strip(" -")
+    return title or raw_title.strip()
+
+
+def scrape_oncf_recruitment():
+    print("[*] SCRAPING SOURCE: ONCF Recrutement...")
+    try:
+        response = fetch_page(
+            ONCF_RECRUITMENT_URL,
+            timeout=20,
+            allow_insecure_fallback=True,
+        )
+        soup = BeautifulSoup(response.text, 'html.parser')
+    except Exception as e:
+        print(f"[!] Error scraping ONCF Recrutement: {e}")
+        return []
+
+    jobs = []
+    cards = soup.select('div.block-offres-emploi_liste_item')
+
+    for card in cards:
+        try:
+            title_node = card.select_one('h3.block-offres-emploi_liste_item_title')
+            raw_title = title_node.get_text(" ", strip=True) if title_node else ""
+            if not raw_title or not re.search(r'avis de recrutement', raw_title, re.IGNORECASE):
+                continue
+
+            detail_url = ""
+            pdf_url = ""
+            for link in card.select('.block-offres-emploi_liste_item_links a[href]'):
+                href = urljoin(ONCF_RECRUITMENT_URL, link.get('href', '').strip())
+                link_text = link.get_text(" ", strip=True).lower()
+                if ".pdf" in href.lower() or "pdf" in link_text:
+                    pdf_url = href
+                elif not detail_url:
+                    detail_url = href
+
+            if not detail_url and not pdf_url:
+                continue
+
+            title = clean_oncf_title(raw_title)
+            full_title = f"{title} - ONCF" if "oncf" not in title.lower() else title
+            jobs.append(
+                {
+                    "organization": ONCF_ORGANIZATION,
+                    "title": full_title,
+                    "posts": "N/A",
+                    "deadline": "N/A",
+                    "url": detail_url or pdf_url,
+                }
+            )
+        except Exception as exc:
+            preview = card.get_text(" ", strip=True)[:120]
+            print(f"[!] Skipping malformed ONCF card: {exc} | Preview: {preview}")
+            continue
+
+    return jobs
+
 def scrape_all_sources():
     # 1. Emploi-Public Sections
     emploi_sections = [
@@ -169,6 +300,12 @@ def scrape_all_sources():
         for j in jobs:
             if j['url'] not in seen_urls:
                 total_jobs.append(j); seen_urls.add(j['url'])
+
+    # Scrape ONCF Recrutement
+    oncf_jobs = scrape_oncf_recruitment()
+    for j in oncf_jobs:
+        if j['url'] not in seen_urls:
+            total_jobs.append(j); seen_urls.add(j['url'])
 
     # Scrape Alwadifa-Maroc
     al_jobs = scrape_alwadifa_maroc()
