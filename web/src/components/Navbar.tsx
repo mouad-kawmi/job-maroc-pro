@@ -4,10 +4,11 @@ import { siteConfig } from '@/lib/site-config';
 export function Navbar({ lang }: { lang: 'ar' | 'fr' }) {
   const t = {
     ar: {
-      home: 'الرئيسية',
-      public: 'القطاع العام',
-      private: 'القطاع الخاص',
-      blog: 'المدونة',
+      home: '\u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629',
+      public: '\u0627\u0644\u0642\u0637\u0627\u0639 \u0627\u0644\u0639\u0627\u0645',
+      private: '\u0627\u0644\u0642\u0637\u0627\u0639 \u0627\u0644\u062e\u0627\u0635',
+      guides: '\u062f\u0644\u0627\u0626\u0644',
+      blog: '\u0627\u0644\u0645\u062f\u0648\u0646\u0629',
       toggleLang: 'Francais',
       toggleLink: 'fr',
     },
@@ -15,8 +16,9 @@ export function Navbar({ lang }: { lang: 'ar' | 'fr' }) {
       home: 'Accueil',
       public: 'Secteur public',
       private: 'Secteur prive',
+      guides: 'Guides',
       blog: 'Blog',
-      toggleLang: 'العربية',
+      toggleLang: '\u0627\u0644\u0639\u0631\u0628\u064a\u0629',
       toggleLink: 'ar',
     },
   }[lang];
@@ -49,7 +51,12 @@ export function Navbar({ lang }: { lang: 'ar' | 'fr' }) {
               htmlFor="mobile-menu"
               className="cursor-pointer rounded-md border border-blue-700 bg-blue-900/50 p-1.5 hover:bg-blue-800 md:hidden"
             >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -81,6 +88,12 @@ export function Navbar({ lang }: { lang: 'ar' | 'fr' }) {
             className="block w-full whitespace-nowrap py-2 transition-colors hover:text-green-400 md:inline-block md:w-auto md:py-0"
           >
             {t.private}
+          </Link>
+          <Link
+            href={`/guides?lang=${lang}`}
+            className="block w-full whitespace-nowrap py-2 transition-colors hover:text-green-400 md:inline-block md:w-auto md:py-0"
+          >
+            {t.guides}
           </Link>
           <Link
             href={`/blog?lang=${lang}`}

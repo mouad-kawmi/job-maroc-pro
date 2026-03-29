@@ -1,13 +1,13 @@
 import { MetadataRoute } from 'next';
 import { getDb } from '@/lib/db';
 import { listBlogPosts } from '@/lib/content';
+import { listJobGuides } from '@/lib/job-guides';
 import { siteConfig } from '@/lib/site-config';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const db = await getDb();
-  
-  // 1. Fetch all jobs
-  const jobs = await db.all("SELECT id, created_at FROM jobs ORDER BY id DESC");
+
+  const jobs = await db.all('SELECT id, created_at FROM jobs ORDER BY id DESC');
   const jobUrls = jobs.map((job) => ({
     url: `${siteConfig.url}/jobs/${job.id}`,
     lastModified: job.created_at || new Date().toISOString(),
@@ -15,7 +15,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  // 2. Blog posts (static + admin managed)
   const staticBlogArticles = [
     { slug: 'job-search-ads', date: '2025-03-22' },
     { slug: 'cv-writing', date: '2025-03-21' },
@@ -28,6 +27,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { slug: 'employee-rights', date: '2025-03-14' },
     { slug: 'anapec-services', date: '2025-03-13' },
   ];
+
   const dynamicBlogArticles = await listBlogPosts();
   const allBlogArticles = [
     ...dynamicBlogArticles.map((post) => ({
@@ -40,20 +40,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       array.findIndex((candidate) => candidate.slug === article.slug) === index,
   );
 
-  const blogUrls = allBlogArticles.map((art) => ({
-    url: `${siteConfig.url}/blog/${art.slug}`,
-    lastModified: art.date,
+  const blogUrls = allBlogArticles.map((article) => ({
+    url: `${siteConfig.url}/blog/${article.slug}`,
+    lastModified: article.date,
     changeFrequency: 'weekly' as const,
     priority: 0.6,
   }));
 
-  // 3. Static Pages
+  const guideUrls = listJobGuides().map((guide) => ({
+    url: `${siteConfig.url}/guides/${guide.slug}`,
+    lastModified: new Date().toISOString(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+  }));
+
   const staticPages = [
     {
       url: siteConfig.url,
       lastModified: new Date().toISOString(),
       changeFrequency: 'daily' as const,
       priority: 1.0,
+    },
+    {
+      url: `${siteConfig.url}/guides`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
     },
     {
       url: `${siteConfig.url}/blog`,
@@ -81,5 +93,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  return [...staticPages, ...jobUrls, ...blogUrls];
+  return [...staticPages, ...guideUrls, ...jobUrls, ...blogUrls];
 }

@@ -6,6 +6,8 @@ import { Footer } from '@/components/Footer';
 import { AdSlot } from '@/components/AdSlot';
 import { isExpired } from '@/lib/date-utils';
 import { formatPostsLabel } from '@/lib/job-utils';
+import { filterJobsBySector } from '@/lib/job-categories';
+import { listJobGuides } from '@/lib/job-guides';
 
 function AdSpot({ label, height = 'min-h-[100px]' }: { label: string, height?: string }) {
   return <AdSlot label={label} heightClassName={height} />;
@@ -58,6 +60,28 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
         const isPublic = publicKeywords.some(keyword => j.organization.includes(keyword));
         return sector === 'public' ? isPublic : !isPublic;
       });
+  const featuredGuides = listJobGuides().map((guide) => ({
+    ...guide,
+    activeCount: filterJobsBySector(activeJobs, guide.sector).length,
+  }));
+  const guidesUi =
+    lang === 'fr'
+      ? {
+          badge: 'Guides pratiques',
+          title: 'Mieux organiser votre recherche selon le secteur',
+          subtitle:
+            'Des pages utiles pour comprendre les differents types d opportunites, verifier les annonces et cibler les offres les plus pertinentes.',
+          activeJobs: 'offres actives',
+          cta: 'Ouvrir le guide',
+        }
+      : {
+          badge: '\u062f\u0644\u0627\u0626\u0644 \u0639\u0645\u0644\u064a\u0629',
+          title: '\u0646\u0638\u0645 \u0628\u062d\u062b\u0643 \u062d\u0633\u0628 \u0646\u0648\u0639 \u0627\u0644\u0642\u0637\u0627\u0639',
+          subtitle:
+            '\u0635\u0641\u062d\u0627\u062a \u0645\u0641\u064a\u062f\u0629 \u062a\u0633\u0627\u0639\u062f\u0643 \u0639\u0644\u0649 \u0641\u0647\u0645 \u0646\u0648\u0639 \u0627\u0644\u0641\u0631\u0635\u060c \u0648\u0645\u0631\u0627\u062c\u0639\u0629 \u0627\u0644\u0625\u0639\u0644\u0627\u0646\u0627\u062a\u060c \u0648\u062a\u0631\u062a\u064a\u0628 \u062a\u0642\u062f\u064a\u0645\u0643 \u0628\u0634\u0643\u0644 \u0623\u0641\u0636\u0644.',
+          activeJobs: '\u0641\u0631\u0635 \u0646\u0634\u0637\u0629',
+          cta: '\u0627\u0641\u062a\u062d \u0627\u0644\u062f\u0644\u064a\u0644',
+        };
 
   const totalJobs = jobsToDisplay.length;
   const totalPages = Math.ceil(totalJobs / JOBS_PER_PAGE);
@@ -115,6 +139,61 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
 
       {/* ═══════════════ JOB LISTINGS ═══════════════ */}
       <main className="container mx-auto px-4 max-w-5xl mt-6 flex-grow">
+        <section className="mb-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-100 bg-slate-50/80 px-5 py-4 md:px-6">
+            <span className="inline-flex rounded-full bg-blue-100 px-3 py-1 text-[11px] font-black uppercase tracking-[0.24em] text-blue-700">
+              {guidesUi.badge}
+            </span>
+            <h2 className="mt-3 text-xl font-black text-slate-900 md:text-2xl">
+              {guidesUi.title}
+            </h2>
+            <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
+              {guidesUi.subtitle}
+            </p>
+          </div>
+          <div className="grid gap-4 p-5 md:grid-cols-2 md:p-6">
+            {featuredGuides.map((guide) => (
+              <Link
+                key={guide.slug}
+                href={`/guides/${guide.slug}?lang=${lang}`}
+                className="group rounded-2xl border border-slate-200 bg-white p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-lg"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-emerald-700">
+                    {guide.sector === 'public'
+                      ? lang === 'fr'
+                        ? 'Public'
+                        : '\u0639\u0627\u0645'
+                      : lang === 'fr'
+                        ? 'Prive'
+                        : '\u062e\u0627\u0635'}
+                  </span>
+                  <span className="text-xs font-bold text-slate-400">
+                    {guide.activeCount}+ {guidesUi.activeJobs}
+                  </span>
+                </div>
+                <h2 className="mt-4 text-lg font-black leading-snug text-slate-900 transition-colors group-hover:text-blue-700">
+                  {guide.titles[lang]}
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-slate-600">
+                  {guide.overviews[lang]}
+                </p>
+                <ul className="mt-4 space-y-2 text-sm text-slate-600">
+                  {guide.keyPoints[lang].slice(0, 2).map((point) => (
+                    <li key={point} className="flex gap-3">
+                      <span className="mt-1 text-emerald-500">•</span>
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
+                <span className="mt-5 inline-flex text-sm font-black uppercase tracking-[0.18em] text-blue-600 group-hover:text-blue-700">
+                  {guidesUi.cta} →
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+
         {/* Section header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-5 gap-4">
           <div>
