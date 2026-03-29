@@ -3,16 +3,11 @@ import 'server-only';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import vm from 'node:vm';
+import { STATIC_BLOG_CARDS, type StaticBlogCard } from '@/lib/blog-static';
 import { listBlogPosts, saveBlogPost } from '@/lib/content';
 import { isReadonlyDbRuntime } from '@/lib/db';
 
-type LegacyCard = {
-  slug: string;
-  date: string;
-  tags: string[];
-  title: { ar: string; fr: string };
-  excerpt: { ar: string; fr: string };
-};
+type LegacyCard = StaticBlogCard;
 
 type LegacyDetails = Record<
   string,
@@ -57,7 +52,6 @@ async function loadLegacyBlogData(): Promise<{
 }> {
   if (!legacyCache) {
     legacyCache = (async () => {
-      const pagePath = path.join(process.cwd(), 'src', 'app', 'blog', 'page.tsx');
       const detailPath = path.join(
         process.cwd(),
         'src',
@@ -67,18 +61,8 @@ async function loadLegacyBlogData(): Promise<{
         'page.tsx',
       );
 
-      const [pageSourceRaw, detailSourceRaw] = await Promise.all([
-        readFile(pagePath, 'utf8'),
-        readFile(detailPath, 'utf8'),
-      ]);
-      const pageSource = pageSourceRaw.replace(/\r\n/g, '\n');
+      const detailSourceRaw = await readFile(detailPath, 'utf8');
       const detailSource = detailSourceRaw.replace(/\r\n/g, '\n');
-
-      const cardsLiteral = sliceBetween(
-        pageSource,
-        'const STATIC_ARTICLES: BlogCard[] = ',
-        '\n\nfunction mergeArticles',
-      );
       const detailsLiteral = sliceBetween(
         detailSource,
         "const articles: Record<string, { title: { ar: string, fr: string }, content: { ar: string, fr: string } }> = ",
@@ -86,7 +70,7 @@ async function loadLegacyBlogData(): Promise<{
       );
 
       return {
-        cards: evaluateLiteral<LegacyCard[]>(cardsLiteral),
+        cards: STATIC_BLOG_CARDS,
         details: evaluateLiteral<LegacyDetails>(detailsLiteral),
       };
     })().catch((error) => {
@@ -143,6 +127,5 @@ export async function ensureLegacyBlogPosts(): Promise<number> {
 }
 
 export async function listLegacyBlogCards(): Promise<LegacyCard[]> {
-  const { cards } = await loadLegacyBlogData();
-  return cards;
+  return STATIC_BLOG_CARDS;
 }
