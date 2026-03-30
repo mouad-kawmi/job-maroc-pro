@@ -42,11 +42,13 @@ function toMetadataBase(url: string): URL {
 
 const siteName = readEnv('NEXT_PUBLIC_SITE_NAME', DEFAULT_SITE_NAME);
 const siteUrl = normalizeUrl(readEnv('NEXT_PUBLIC_SITE_URL', DEFAULT_SITE_URL));
+const telegramUrl = normalizeUrl(readEnv('NEXT_PUBLIC_TELEGRAM_URL'));
 const adsenseClientId = readEnv('NEXT_PUBLIC_ADSENSE_CLIENT_ID');
 const googleSiteVerification = readEnv('NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION');
 const gaMeasurementId = readEnv('NEXT_PUBLIC_GA_MEASUREMENT_ID');
 const hasAdsense = /^ca-pub-\d+$/.test(adsenseClientId);
 const hasAnalytics = /^G-[A-Z0-9]+$/i.test(gaMeasurementId);
+const hasTelegram = /^https?:\/\//i.test(telegramUrl);
 
 export const siteConfig = {
   name: siteName,
@@ -55,6 +57,8 @@ export const siteConfig = {
   url: siteUrl,
   metadataBase: toMetadataBase(siteUrl),
   brand: splitBrandName(siteName),
+  telegramUrl,
+  hasTelegram,
   adsenseClientId,
   adsensePublisherId: hasAdsense ? toPublisherId(adsenseClientId) : '',
   googleSiteVerification,

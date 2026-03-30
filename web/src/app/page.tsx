@@ -8,6 +8,8 @@ import { isExpired } from '@/lib/date-utils';
 import { formatPostsLabel } from '@/lib/job-utils';
 import { filterJobsBySector } from '@/lib/job-categories';
 import { listJobGuides } from '@/lib/job-guides';
+import { getSiteSettings } from '@/lib/content';
+import { siteConfig } from '@/lib/site-config';
 
 function AdSpot({ label, height = 'min-h-[100px]' }: { label: string, height?: string }) {
   return <AdSlot label={label} heightClassName={height} />;
@@ -41,6 +43,7 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
 
   const t = ui[lang];
   const db = await getDb();
+  const settings = await getSiteSettings();
   // Fetch more to ensure we have enough active jobs
   const allJobs: Job[] = await db.all("SELECT * FROM jobs ORDER BY id DESC LIMIT 500");
 
@@ -82,6 +85,54 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
           activeJobs: '\u0641\u0631\u0635 \u0646\u0634\u0637\u0629',
           cta: '\u0627\u0641\u062a\u062d \u0627\u0644\u062f\u0644\u064a\u0644',
         };
+  const conversionUi =
+    lang === 'fr'
+      ? {
+          badge: 'Alertes et veille',
+          title: 'Recevez les nouvelles offres sans verifier le site toute la journee',
+          subtitle:
+            "Transformons les visites en audience fidele: suivez les nouvelles opportunites, les delais importants et les contenus utiles depuis un point de contact simple.",
+          points: [
+            'Alertes rapides sur les nouvelles offres et concours ajoutes au site.',
+            'Rappels utiles pour verifier les delais et la source officielle avant de postuler.',
+            'Une relation directe avec votre audience au lieu de dependre uniquement de Google.',
+          ],
+          primaryTelegram: 'Rejoindre Telegram',
+          primaryFallback: 'Recevoir les alertes',
+          secondaryContact: 'Nous contacter',
+          secondaryGuides: 'Voir les guides',
+          note: 'Gratuit, sans intermediaire, avec rappel constant vers la source officielle.',
+          emailLabel: 'Contact direct',
+        }
+      : {
+          badge: '\u062a\u062d\u0648\u064a\u0644 \u0627\u0644\u0632\u0648\u0627\u0631 \u0625\u0644\u0649 \u0645\u062a\u0627\u0628\u0639\u064a\u0646',
+          title: '\u062e\u0644\u064a \u0627\u0644\u0632\u0627\u0626\u0631 \u064a\u0631\u062c\u0639 \u0644\u0643 \u0648\u064a\u062a\u0648\u0635\u0644 \u0628\u0622\u062e\u0631 \u0627\u0644\u0641\u0631\u0635',
+          subtitle:
+            '\u0647\u0630\u0647 \u0627\u0644\u0645\u0633\u0627\u062d\u0629 \u062a\u0633\u0627\u0639\u062f \u0639\u0644\u0649 \u062a\u062d\u0648\u064a\u0644 \u0627\u0644\u0632\u0648\u0627\u0631 \u0625\u0644\u0649 \u0645\u062a\u0627\u0628\u0639\u064a\u0646 \u062f\u0627\u0626\u0645\u064a\u0646 \u0639\u0628\u0631 \u0627\u0644\u062a\u0646\u0628\u064a\u0647\u0627\u062a \u0648\u0627\u0644\u0642\u0646\u0648\u0627\u062a \u0627\u0644\u0645\u0628\u0627\u0634\u0631\u0629 \u0628\u062f\u0644 \u0627\u0644\u0627\u0643\u062a\u0641\u0627\u0621 \u0628\u0632\u064a\u0627\u0631\u0629 \u0648\u0627\u062d\u062f\u0629.',
+          points: [
+            '\u062a\u0646\u0628\u064a\u0647\u0627\u062a \u0633\u0631\u064a\u0639\u0629 \u0639\u0646\u062f \u0625\u0636\u0627\u0641\u0629 \u0641\u0631\u0635 \u062c\u062f\u064a\u062f\u0629.',
+            '\u062a\u0630\u0643\u064a\u0631 \u0628\u0627\u0644\u0622\u062c\u0627\u0644 \u0648\u0627\u0644\u0631\u0648\u0627\u0628\u0637 \u0627\u0644\u0631\u0633\u0645\u064a\u0629 \u0642\u0628\u0644 \u0627\u0644\u062a\u0642\u062f\u064a\u0645.',
+            '\u0646\u0642\u0637\u0629 \u062a\u0648\u0627\u0635\u0644 \u0648\u0627\u062d\u062f\u0629 \u062a\u062e\u0644\u064a \u0627\u0644\u062c\u0645\u0647\u0648\u0631 \u064a\u0628\u0642\u0649 \u0645\u0631\u062a\u0628\u0637 \u0628\u0627\u0644\u0645\u0648\u0642\u0639.',
+          ],
+          primaryTelegram: '\u0627\u0646\u0636\u0645 \u0625\u0644\u0649 Telegram',
+          primaryFallback: '\u0627\u0637\u0644\u0628 \u0627\u0644\u062a\u0646\u0628\u064a\u0647\u0627\u062a',
+          secondaryContact: '\u062a\u0648\u0627\u0635\u0644 \u0645\u0639\u0646\u0627',
+          secondaryGuides: '\u0627\u0637\u0644\u0639 \u0639\u0644\u0649 \u0627\u0644\u062f\u0644\u0627\u0626\u0644',
+          note: '\u0645\u062c\u0627\u0646\u0627\u060c \u0628\u062f\u0648\u0646 \u0648\u0633\u0627\u0637\u0629\u060c \u0648\u0645\u0639 \u062a\u0630\u0643\u064a\u0631 \u062f\u0627\u0626\u0645 \u0628\u0627\u0644\u0645\u0635\u062f\u0631 \u0627\u0644\u0631\u0633\u0645\u064a.',
+          emailLabel: '\u0628\u0631\u064a\u062f \u0627\u0644\u062a\u0648\u0627\u0635\u0644',
+        };
+  const primaryCtaHref = siteConfig.hasTelegram
+    ? siteConfig.telegramUrl
+    : `/contact?lang=${lang}`;
+  const primaryCtaLabel = siteConfig.hasTelegram
+    ? conversionUi.primaryTelegram
+    : conversionUi.primaryFallback;
+  const secondaryCtaHref = siteConfig.hasTelegram
+    ? `/contact?lang=${lang}`
+    : `/guides?lang=${lang}`;
+  const secondaryCtaLabel = siteConfig.hasTelegram
+    ? conversionUi.secondaryContact
+    : conversionUi.secondaryGuides;
 
   const totalJobs = jobsToDisplay.length;
   const totalPages = Math.ceil(totalJobs / JOBS_PER_PAGE);
@@ -139,6 +190,60 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
 
       {/* ═══════════════ JOB LISTINGS ═══════════════ */}
       <main className="container mx-auto px-4 max-w-5xl mt-6 flex-grow">
+        <section className="mb-6 overflow-hidden rounded-[2rem] border border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-[#10245c] text-white shadow-sm">
+          <div className="grid gap-6 px-5 py-6 md:grid-cols-[1.15fr_0.85fr] md:px-6 md:py-7">
+            <div>
+              <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.24em] text-blue-100">
+                {conversionUi.badge}
+              </span>
+              <h2 className="mt-4 text-2xl font-black leading-tight md:text-3xl">
+                {conversionUi.title}
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300 md:text-base">
+                {conversionUi.subtitle}
+              </p>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <Link
+                  href={primaryCtaHref}
+                  target={siteConfig.hasTelegram ? '_blank' : undefined}
+                  rel={siteConfig.hasTelegram ? 'noreferrer' : undefined}
+                  className="inline-flex items-center rounded-full bg-green-500 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-950 transition-transform hover:-translate-y-0.5 hover:bg-green-400"
+                >
+                  {primaryCtaLabel}
+                </Link>
+                <Link
+                  href={secondaryCtaHref}
+                  className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-white transition-colors hover:bg-white/15"
+                >
+                  {secondaryCtaLabel}
+                </Link>
+              </div>
+              <p className="mt-4 text-xs font-bold uppercase tracking-[0.16em] text-blue-100/80">
+                {conversionUi.note}
+              </p>
+            </div>
+
+            <div className="rounded-[1.75rem] border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
+              <ul className="space-y-3">
+                {conversionUi.points.map((point) => (
+                  <li key={point} className="flex gap-3 text-sm leading-7 text-slate-200">
+                    <span className="mt-1 text-green-400">•</span>
+                    <span>{point}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/30 p-4">
+                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">
+                  {conversionUi.emailLabel}
+                </p>
+                <p className="mt-2 break-all text-sm font-black text-white">
+                  {settings.contactEmail}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="mb-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-100 bg-slate-50/80 px-5 py-4 md:px-6">
             <span className="inline-flex rounded-full bg-blue-100 px-3 py-1 text-[11px] font-black uppercase tracking-[0.24em] text-blue-700">
