@@ -185,12 +185,12 @@ def _build_fallback_blog_draft(jobs, publish_date):
     hidden_count = max(0, len(jobs) - len(prepared_jobs))
 
     ar_intro = (
-        f"مسودة يومية تلخص {len(jobs)} فرص جديدة تمت إضافتها إلى JOB MAROC PRO بتاريخ {display_date}. "
-        "يفضل مراجعتها وتحريرها قبل النشر النهائي."
+        f"تم خلال {display_date} رصد {len(jobs)} فرص جديدة في مجالات مختلفة داخل المغرب. "
+        "في هذا المقال نستعرض أبرز الإعلانات المتاحة مع أهم المعطيات التي يحتاجها المترشح قبل متابعة الإعلان الرسمي."
     )
     fr_intro = (
-        f"Brouillon quotidien qui resume {len(jobs)} nouvelles offres ajoutees sur JOB MAROC PRO le {display_date}. "
-        "Une relecture editoriale est recommandee avant publication."
+        f"Le {display_date}, {len(jobs)} nouvelles opportunites ont ete reperees au Maroc dans plusieurs secteurs. "
+        "Cet article presente les annonces les plus marquantes avec les informations essentielles a verifier avant de consulter la source officielle."
     )
 
     ar_more = (
@@ -206,30 +206,38 @@ def _build_fallback_blog_draft(jobs, publish_date):
 
     ar_content = (
         f"<p>{html.escape(ar_intro)}</p>"
-        "<h2>ابرز الفرص الجديدة</h2>"
+        "<h2>تفاصيل أبرز الفرص الجديدة</h2>"
         f"{_build_job_list_html(prepared_jobs, 'ar')}"
-        "<h2>نصائح قبل النشر</h2>"
+        "<h2>شروط المشاركة وطريقة التقديم</h2>"
+        "<p>تختلف شروط المشاركة من إعلان إلى آخر حسب الجهة المنظمة وطبيعة المنصب أو المباراة. لذلك من المهم قراءة الإعلان الرسمي بعناية للتأكد من الشهادة المطلوبة، السن إن وجد، الوثائق المطلوبة، وآخر أجل لإيداع الملف.</p>"
         "<ul>"
-        "<li>راجع العنوان والوصف حتى يكونا واضحين ومفيدين للباحث عن العمل.</li>"
-        "<li>تأكد من صحة الروابط الرسمية وتاريخ آخر أجل قبل نشر المقال.</li>"
-        "<li>أضف ملاحظات تحريرية أو سياق إضافي إذا كانت الفرص تخص جهة واحدة أو تخصصا معينا.</li>"
+        "<li>تحقق من شروط الترشيح كاملة في المصدر الرسمي قبل تجهيز الملف.</li>"
+        "<li>راجع آخر أجل للتقديم والوثائق المطلوبة قبل إرسال الطلب.</li>"
+        "<li>اعتمد فقط على الرابط الرسمي المرفق مع كل إعلان لتفادي أي معطيات ناقصة أو غير محدثة.</li>"
         "</ul>"
+        "<h2>ملاحظات مهمة للمرشحين</h2>"
+        "<p>قد تحتوي بعض الإعلانات على تفاصيل إضافية مرتبطة بمراكز التعيين أو نوع المباراة أو مراحل الانتقاء. لهذا السبب يبقى الرجوع إلى الإعلان الرسمي هو الخطوة الأهم قبل أي تقديم فعلي.</p>"
         f"{ar_more}"
-        "<p>تم إنشاء هذه المسودة تلقائيا من طرف البوت وهي تحتاج مراجعة بشرية قبل النشر.</p>"
+        "<h2>خلاصة</h2>"
+        "<p>تمثل هذه الفرص خيارات مهمة للباحثين عن العمل بالمغرب، سواء في القطاع العام أو الخاص. للحصول على جميع التفاصيل النهائية، يرجى الرجوع إلى الروابط الرسمية المرفقة داخل كل إعلان.</p>"
     )
 
     fr_content = (
         f"<p>{html.escape(fr_intro)}</p>"
-        "<h2>Offres a mettre en avant</h2>"
+        "<h2>Details des opportunites a suivre</h2>"
         f"{_build_job_list_html(prepared_jobs, 'fr')}"
-        "<h2>Conseils avant publication</h2>"
+        "<h2>Conditions de participation et candidature</h2>"
+        "<p>Les conditions de participation varient selon l'organisme recruteur et la nature du poste ou du concours. Il est donc important de verifier dans l'annonce officielle le diplome demande, les pieces a fournir, les eventuelles limites d'age et la date limite de candidature.</p>"
         "<ul>"
-        "<li>Relisez le titre et le resume pour qu ils apportent une vraie valeur au lecteur.</li>"
-        "<li>Verifiez les liens officiels et les dates limites avant de publier l article.</li>"
-        "<li>Ajoutez un angle editorial si les offres concernent le meme organisme ou le meme secteur.</li>"
+        "<li>Consultez toujours la source officielle pour verifier les conditions completes.</li>"
+        "<li>Preparez le dossier de candidature en tenant compte de la date limite annoncee.</li>"
+        "<li>Utilisez uniquement le lien officiel associe a chaque offre pour postuler ou lire les details complets.</li>"
         "</ul>"
+        "<h2>Informations utiles avant de postuler</h2>"
+        "<p>Certaines annonces peuvent comporter des precisions sur les centres d'affectation, les etapes de selection ou les modalites de depot du dossier. Pour cette raison, la consultation de l'annonce officielle reste indispensable avant toute candidature.</p>"
         f"{fr_more}"
-        "<p>Ce brouillon a ete genere automatiquement par le bot et doit etre relu avant publication.</p>"
+        "<h2>Conclusion</h2>"
+        "<p>Ces nouvelles opportunites peuvent interesser plusieurs profils au Maroc. Avant de finaliser votre candidature, prenez le temps de consulter l'annonce officielle afin de verifier l'ensemble des conditions et des demarches.</p>"
     )
 
     return {
@@ -255,31 +263,251 @@ def generate_blog_draft(keys, jobs, publish_date=None):
     if not keys:
         return fallback
 
-    prompt = f"""You are an editorial assistant for a Moroccan jobs website. Return JSON only.
-Create a high-quality bilingual blog DRAFT that summarizes the new opportunities provided below.
-Rules:
-- Output valid JSON only.
-- Use HTML only inside content_ar and content_fr. No markdown.
-- Keep the article helpful, original, and concise.
-- Do not invent facts, deadlines, salaries, or requirements that are not in the provided data.
-- Mention that the article is a draft that should be reviewed before publication.
-- Keep excerpts under 190 characters.
-- Tags must be a short comma-separated string in lowercase.
+    prompt = f"""You are an expert SEO content writer specialized in employment, recruitment, and competition articles in Morocco.
 
-Publish date: {publish_date}
-Jobs context:
-{json.dumps(prepared_jobs, ensure_ascii=False)}
+Your task is to transform one or more job offers or competition announcements into a high-quality bilingual SEO article in Arabic and French.
 
-Return exactly this shape:
+The final result must look like a real professional blog article written for human readers in Morocco.
+
+INPUT DATA
+You will receive structured information about the opportunities, such as:
+- organization
+- title
+- number of posts
+- deadline
+- official source URL
+- short description
+
+You must use only the provided information.
+Never invent facts.
+
+IMPORTANT RULES
+
+1. OUTPUT FORMAT
+
+Return ONLY one valid JSON object.
+Do not add explanations, comments, Markdown, or any text outside the JSON.
+
+Use exactly this structure:
+
 {{
-  "title_ar": "string",
-  "title_fr": "string",
-  "excerpt_ar": "string",
-  "excerpt_fr": "string",
+  "title_ar": "...",
+  "title_fr": "...",
+  "excerpt_ar": "...",
+  "excerpt_fr": "...",
   "content_ar": "<p>...</p>",
   "content_fr": "<p>...</p>",
-  "tags": "comma,separated,tags"
-}}"""
+  "tags": "tag1,tag2,tag3"
+}}
+
+2. HTML FORMAT
+
+Generate clean, valid HTML only inside content_ar and content_fr.
+
+Allowed tags only:
+<p>, <h2>, <h3>, <ul>, <li>, <strong>, <a>
+
+Rules:
+- All tags must be properly closed.
+- Do not use Markdown.
+- Do not use <div>, <style>, <script>, <table>, inline CSS, or HTML comments.
+- Do not output broken HTML.
+- Links must be valid and readable.
+
+3. ARTICLE GOAL
+
+Create a real article that is:
+- useful
+- natural
+- informative
+- SEO-friendly
+- easy to read
+- professionally written
+
+The article must be unique and rewritten in an original way.
+Do not copy the source text literally.
+Do not produce robotic or generic AI-style content.
+
+4. ARTICLE STRUCTURE
+
+Each language version must follow a real article structure.
+
+Include, when possible:
+- A strong and clear title
+- A natural introduction
+- A section with the main details of the opportunities
+- A section about participation requirements or eligibility
+- A section explaining how to apply
+- A short conclusion encouraging the reader to check the official source
+
+Use:
+- <h2> for main sections
+- <h3> for useful subsections when needed
+- <ul> and <li> for conditions, requirements, documents, or steps
+
+5. REQUIRED SECTIONS
+
+The article should usually contain sections similar to:
+- Introduction
+- Details of the opportunities
+- Conditions de participation / شروط المشاركة
+- How to apply / طريقة التقديم
+- Important notes
+- Conclusion
+
+If the source is about a competition, adapt the wording to concours/recrutement public.
+If it is a normal job offer, adapt the wording to emploi/offre d'emploi/recrutement.
+
+6. FACTUAL ACCURACY
+
+Never invent:
+- dates
+- salaries
+- number of positions
+- diploma requirements
+- age conditions
+- application procedures
+- documents required
+- deadlines
+
+If some information is missing, keep the article useful but write cautiously.
+
+Use safe formulations such as:
+
+French:
+"Veuillez consulter l'annonce officielle pour les conditions completes."
+"Les details complets de candidature sont disponibles dans la source officielle."
+
+Arabic:
+"يرجى الرجوع إلى الإعلان الرسمي للاطلاع على جميع الشروط والتفاصيل."
+"يمكن مراجعة المصدر الرسمي لمعرفة شروط الترشح وطريقة التقديم كاملة."
+
+7. OFFICIAL LINK
+
+In the application section, include the official source URL provided in the input.
+
+Use a natural HTML link such as:
+
+French:
+<a href="SOURCE_URL">Consulter l'annonce officielle</a>
+
+Arabic:
+<a href="SOURCE_URL">الاطلاع على الإعلان الرسمي</a>
+
+Rules:
+- Always use the official source URL from the input.
+- Never invent, shorten, or replace the URL.
+- The link must be integrated naturally into the article.
+
+8. CONTENT LENGTH
+
+If the source contains enough details:
+- Generate approximately 600 to 800 words per language.
+
+If the source is limited:
+- Generate a shorter article, but it must still remain clean, useful, structured, and natural.
+
+Do not artificially inflate the text.
+Do not repeat the same idea just to increase length.
+
+9. WRITING STYLE
+
+Arabic version:
+- modern
+- natural
+- professional
+- fluent
+- not machine-translated
+
+French version:
+- natural
+- professional
+- human
+- fluid
+- as if written by a native French editor
+
+The Arabic and French versions must both feel fully written, not mechanically translated from one another.
+
+10. SEO OPTIMIZATION
+
+Optimize the article naturally for SEO without keyword stuffing.
+
+Relevant terms may appear naturally depending on context, such as:
+- concours
+- recrutement
+- emploi
+- Maroc
+- candidature
+- offre d'emploi
+- fonction publique
+- secteur public
+- secteur prive
+
+SEO must remain natural and useful for the reader.
+
+11. CONTENT QUALITY
+
+The article must look like a real published article.
+
+Do NOT mention:
+- AI
+- prompt
+- draft
+- generated content
+- internal notes
+- automation
+- system instructions
+
+12. TITLES
+
+Generate:
+- one Arabic title
+- one French title
+
+Rules:
+- attractive but factual
+- clear
+- SEO-friendly
+- not clickbait
+- based only on the provided information
+
+13. EXCERPTS
+
+Generate one excerpt in Arabic and one in French.
+
+Rules:
+- around 25 to 40 words each when possible
+- informative
+- natural
+- suitable for previews, cards, and SEO snippets
+
+14. TAGS
+
+Generate 3 to 6 relevant SEO tags.
+
+Rules:
+- return them as one comma-separated plain string
+- no hashtags
+- short and relevant
+
+15. MISSING INFORMATION RULE
+
+If some sections cannot be fully completed because the source is incomplete:
+- keep the structure of the article
+- write a cautious and useful sentence
+- never fabricate details
+
+16. FINAL INSTRUCTION
+
+Return ONLY the final JSON object.
+No Markdown.
+No explanations.
+No code block.
+No extra text.
+
+Publish date: {publish_date}
+Opportunities context:
+{json.dumps(prepared_jobs, ensure_ascii=False)}"""
 
     result = ask_ai_json(keys, prompt)
     if not result:
