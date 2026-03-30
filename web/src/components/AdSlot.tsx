@@ -10,6 +10,10 @@ export function AdSlot({ label, heightClassName = 'min-h-[90px]' }: AdSlotProps)
     return null;
   }
 
+  if (process.env.NODE_ENV === 'production') {
+    return null;
+  }
+
   return (
     <div
       className={`w-full ${heightClassName} bg-gradient-to-r from-slate-50 to-slate-100 border border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-1 text-xs font-medium`}

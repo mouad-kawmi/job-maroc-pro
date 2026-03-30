@@ -88,14 +88,14 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
   const conversionUi =
     lang === 'fr'
       ? {
-          badge: 'Alertes et veille',
-          title: 'Recevez les nouvelles offres sans verifier le site toute la journee',
+          badge: 'Alertes rapides',
+          title: 'Recevez les nouvelles offres des leur publication',
           subtitle:
-            "Transformons les visites en audience fidele: suivez les nouvelles opportunites, les delais importants et les contenus utiles depuis un point de contact simple.",
+            "Rejoignez notre canal pour suivre les nouvelles opportunites, les concours ajoutes et les rappels utiles sans devoir verifier le site plusieurs fois par jour.",
           points: [
-            'Alertes rapides sur les nouvelles offres et concours ajoutes au site.',
-            'Rappels utiles pour verifier les delais et la source officielle avant de postuler.',
-            'Une relation directe avec votre audience au lieu de dependre uniquement de Google.',
+            'Nouvelles offres et concours ajoutes au fil de la journee.',
+            'Rappels utiles pour les delais et la verification de la source officielle.',
+            'Un moyen simple de rester informe sans rater une opportunite importante.',
           ],
           primaryTelegram: 'Rejoindre Telegram',
           primaryFallback: 'Recevoir les alertes',
@@ -105,14 +105,14 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
           emailLabel: 'Contact direct',
         }
       : {
-          badge: '\u062a\u062d\u0648\u064a\u0644 \u0627\u0644\u0632\u0648\u0627\u0631 \u0625\u0644\u0649 \u0645\u062a\u0627\u0628\u0639\u064a\u0646',
-          title: '\u062e\u0644\u064a \u0627\u0644\u0632\u0627\u0626\u0631 \u064a\u0631\u062c\u0639 \u0644\u0643 \u0648\u064a\u062a\u0648\u0635\u0644 \u0628\u0622\u062e\u0631 \u0627\u0644\u0641\u0631\u0635',
+          badge: '\u062a\u0646\u0628\u064a\u0647\u0627\u062a \u0645\u0628\u0627\u0634\u0631\u0629',
+          title: '\u0645\u0627 \u062a\u0636\u064a\u0639\u0634 \u062d\u062a\u0649 \u0641\u0631\u0635\u0629 \u062c\u062f\u064a\u062f\u0629',
           subtitle:
-            '\u0647\u0630\u0647 \u0627\u0644\u0645\u0633\u0627\u062d\u0629 \u062a\u0633\u0627\u0639\u062f \u0639\u0644\u0649 \u062a\u062d\u0648\u064a\u0644 \u0627\u0644\u0632\u0648\u0627\u0631 \u0625\u0644\u0649 \u0645\u062a\u0627\u0628\u0639\u064a\u0646 \u062f\u0627\u0626\u0645\u064a\u0646 \u0639\u0628\u0631 \u0627\u0644\u062a\u0646\u0628\u064a\u0647\u0627\u062a \u0648\u0627\u0644\u0642\u0646\u0648\u0627\u062a \u0627\u0644\u0645\u0628\u0627\u0634\u0631\u0629 \u0628\u062f\u0644 \u0627\u0644\u0627\u0643\u062a\u0641\u0627\u0621 \u0628\u0632\u064a\u0627\u0631\u0629 \u0648\u0627\u062d\u062f\u0629.',
+            '\u0627\u0646\u0636\u0645 \u0644\u0644\u062a\u0646\u0628\u064a\u0647\u0627\u062a \u0628\u0627\u0634 \u064a\u0648\u0635\u0644\u0643 \u0622\u062e\u0631 \u0627\u0644\u0641\u0631\u0635 \u0648\u0627\u0644\u0645\u0628\u0627\u0631\u064a\u0627\u062a \u0648\u0627\u0644\u0622\u062c\u0627\u0644 \u0627\u0644\u0645\u0647\u0645\u0629 \u0628\u062f\u0648\u0646 \u0645\u0627 \u062a\u0628\u0642\u0649 \u062a\u0631\u062c\u0639 \u0644\u0644\u0645\u0648\u0642\u0639 \u0641\u064a \u0643\u0644 \u0645\u0631\u0629.',
           points: [
-            '\u062a\u0646\u0628\u064a\u0647\u0627\u062a \u0633\u0631\u064a\u0639\u0629 \u0639\u0646\u062f \u0625\u0636\u0627\u0641\u0629 \u0641\u0631\u0635 \u062c\u062f\u064a\u062f\u0629.',
-            '\u062a\u0630\u0643\u064a\u0631 \u0628\u0627\u0644\u0622\u062c\u0627\u0644 \u0648\u0627\u0644\u0631\u0648\u0627\u0628\u0637 \u0627\u0644\u0631\u0633\u0645\u064a\u0629 \u0642\u0628\u0644 \u0627\u0644\u062a\u0642\u062f\u064a\u0645.',
-            '\u0646\u0642\u0637\u0629 \u062a\u0648\u0627\u0635\u0644 \u0648\u0627\u062d\u062f\u0629 \u062a\u062e\u0644\u064a \u0627\u0644\u062c\u0645\u0647\u0648\u0631 \u064a\u0628\u0642\u0649 \u0645\u0631\u062a\u0628\u0637 \u0628\u0627\u0644\u0645\u0648\u0642\u0639.',
+            '\u0641\u0631\u0635 \u062c\u062f\u064a\u062f\u0629 \u0648\u0645\u0628\u0627\u0631\u064a\u0627\u062a \u0643\u062a\u062a\u0632\u0627\u062f \u0628\u0634\u0643\u0644 \u0645\u0633\u062a\u0645\u0631.',
+            '\u062a\u0630\u0643\u064a\u0631 \u0628\u0627\u0644\u0622\u062c\u0627\u0644 \u0648\u0627\u0644\u062a\u0623\u0643\u062f \u0645\u0646 \u0627\u0644\u0645\u0635\u062f\u0631 \u0627\u0644\u0631\u0633\u0645\u064a \u0642\u0628\u0644 \u0627\u0644\u062a\u0642\u062f\u064a\u0645.',
+            '\u0637\u0631\u064a\u0642\u0629 \u0628\u0633\u064a\u0637\u0629 \u0628\u0627\u0634 \u062a\u0628\u0642\u0649 \u0645\u062a\u0627\u0628\u0639 \u0643\u0644 \u062c\u062f\u064a\u062f.',
           ],
           primaryTelegram: '\u0627\u0646\u0636\u0645 \u0625\u0644\u0649 Telegram',
           primaryFallback: '\u0627\u0637\u0644\u0628 \u0627\u0644\u062a\u0646\u0628\u064a\u0647\u0627\u062a',
@@ -137,6 +137,7 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
   const totalJobs = jobsToDisplay.length;
   const totalPages = Math.ceil(totalJobs / JOBS_PER_PAGE);
   const paginatedJobs = jobsToDisplay.slice((page - 1) * JOBS_PER_PAGE, page * JOBS_PER_PAGE);
+  const showConversionSection = page === 1 && status === 'active' && paginatedJobs.length >= 4;
 
   return (
     <div className="min-h-screen font-sans flex flex-col" style={{ background: '#f1f5f9' }} dir={dir}>
@@ -190,6 +191,7 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
 
       {/* ═══════════════ JOB LISTINGS ═══════════════ */}
       <main className="container mx-auto px-4 max-w-5xl mt-6 flex-grow">
+        {false && (
         <section className="mb-6 overflow-hidden rounded-[2rem] border border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-[#10245c] text-white shadow-sm">
           <div className="grid gap-6 px-5 py-6 md:grid-cols-[1.15fr_0.85fr] md:px-6 md:py-7">
             <div>
@@ -243,6 +245,7 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
             </div>
           </div>
         </section>
+        )}
 
         <section className="mb-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-100 bg-slate-50/80 px-5 py-4 md:px-6">
@@ -333,8 +336,8 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
               <React.Fragment key={job.id}>
 
                 {/* AD SPOT 2 — In-Feed after 4th job */}
-                {index === 4 && (
-                  <AdSpot label="In-Feed Native Ad (after 4th job)" height="min-h-[90px]" />
+                {index === 7 && (
+                  <AdSpot label="In-Feed Native Ad (after 8th job)" height="min-h-[90px]" />
                 )}
                 {/* AD SPOT 3 — In-Feed after 9th job */}
                 {index === 9 && (
@@ -371,6 +374,52 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
                     </div>
                   </div>
                 </Link>
+
+                {showConversionSection && index === 3 && (
+                  <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-gradient-to-r from-slate-950 via-slate-900 to-[#12337a] text-white shadow-sm">
+                    <div className="flex flex-col gap-5 px-5 py-6 md:flex-row md:items-center md:justify-between md:px-6">
+                      <div className="max-w-3xl">
+                        <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.24em] text-blue-100">
+                          {conversionUi.badge}
+                        </span>
+                        <h3 className="mt-3 text-xl font-black leading-tight md:text-2xl">
+                          {conversionUi.title}
+                        </h3>
+                        <p className="mt-3 text-sm leading-7 text-slate-300 md:text-base">
+                          {conversionUi.subtitle}
+                        </p>
+                        <ul className="mt-4 space-y-2 text-sm leading-7 text-slate-200">
+                          {conversionUi.points.map((point) => (
+                            <li key={point} className="flex gap-3">
+                              <span className="mt-1 text-green-400">•</span>
+                              <span>{point}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="flex flex-col gap-3 md:min-w-[240px] md:items-end">
+                        <Link
+                          href={primaryCtaHref}
+                          target={siteConfig.hasTelegram ? '_blank' : undefined}
+                          rel={siteConfig.hasTelegram ? 'noreferrer' : undefined}
+                          className="inline-flex items-center justify-center rounded-full bg-green-500 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-950 transition-transform hover:-translate-y-0.5 hover:bg-green-400"
+                        >
+                          {primaryCtaLabel}
+                        </Link>
+                        <Link
+                          href={secondaryCtaHref}
+                          className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-white transition-colors hover:bg-white/15"
+                        >
+                          {secondaryCtaLabel}
+                        </Link>
+                        <p className="text-center text-[11px] font-bold uppercase tracking-[0.16em] text-blue-100/80 md:text-right">
+                          {conversionUi.note}
+                        </p>
+                      </div>
+                    </div>
+                  </section>
+                )}
 
               </React.Fragment>
             ))}
