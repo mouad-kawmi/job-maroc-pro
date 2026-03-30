@@ -1,4 +1,5 @@
 import hashlib
+import json
 import os
 from datetime import datetime, timezone
 
@@ -53,9 +54,37 @@ def _ensure_blog_posts_table(conn):
               content_ar TEXT NOT NULL,
               content_fr TEXT NOT NULL,
               is_published BOOLEAN NOT NULL DEFAULT TRUE,
+              source_type TEXT NOT NULL DEFAULT 'manual',
+              generation_status TEXT NOT NULL DEFAULT 'manual',
+              source_payload TEXT NOT NULL DEFAULT '',
+              generation_model TEXT NOT NULL DEFAULT '',
               created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
               updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
+            """
+        )
+        cursor.execute(
+            """
+            ALTER TABLE blog_posts
+            ADD COLUMN IF NOT EXISTS source_type TEXT NOT NULL DEFAULT 'manual'
+            """
+        )
+        cursor.execute(
+            """
+            ALTER TABLE blog_posts
+            ADD COLUMN IF NOT EXISTS generation_status TEXT NOT NULL DEFAULT 'manual'
+            """
+        )
+        cursor.execute(
+            """
+            ALTER TABLE blog_posts
+            ADD COLUMN IF NOT EXISTS source_payload TEXT NOT NULL DEFAULT ''
+            """
+        )
+        cursor.execute(
+            """
+            ALTER TABLE blog_posts
+            ADD COLUMN IF NOT EXISTS generation_model TEXT NOT NULL DEFAULT ''
             """
         )
     conn.commit()
@@ -91,6 +120,10 @@ def save_auto_blog_draft(draft_data, jobs):
         "excerpt_fr": _normalize_text(draft_data.get("excerpt_fr")),
         "content_ar": _normalize_text(draft_data.get("content_ar")),
         "content_fr": _normalize_text(draft_data.get("content_fr")),
+        "source_type": "bot",
+        "generation_status": "draft",
+        "source_payload": json.dumps(jobs, ensure_ascii=False),
+        "generation_model": _normalize_text(draft_data.get("generation_model") or "python-bot"),
     }
 
     required_fields = [
@@ -142,6 +175,10 @@ def save_auto_blog_draft(draft_data, jobs):
                         excerpt_fr = %s,
                         content_ar = %s,
                         content_fr = %s,
+                        source_type = %s,
+                        generation_status = %s,
+                        source_payload = %s,
+                        generation_model = %s,
                         is_published = FALSE,
                         updated_at = %s
                     WHERE id = %s
@@ -155,6 +192,10 @@ def save_auto_blog_draft(draft_data, jobs):
                         payload["excerpt_fr"],
                         payload["content_ar"],
                         payload["content_fr"],
+                        payload["source_type"],
+                        payload["generation_status"],
+                        payload["source_payload"],
+                        payload["generation_model"],
                         now,
                         existing["id"],
                     ),
@@ -175,11 +216,15 @@ def save_auto_blog_draft(draft_data, jobs):
                   excerpt_fr,
                   content_ar,
                   content_fr,
+                  source_type,
+                  generation_status,
+                  source_payload,
+                  generation_model,
                   is_published,
                   created_at,
                   updated_at
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, FALSE, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, FALSE, %s, %s)
                 """,
                 (
                     payload["slug"],
@@ -191,6 +236,10 @@ def save_auto_blog_draft(draft_data, jobs):
                     payload["excerpt_fr"],
                     payload["content_ar"],
                     payload["content_fr"],
+                    payload["source_type"],
+                    payload["generation_status"],
+                    payload["source_payload"],
+                    payload["generation_model"],
                     now,
                     now,
                 ),

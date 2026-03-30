@@ -1,4 +1,5 @@
 import { getDb } from '@/lib/db';
+import { buildAutoDraftFromJobs, parseAutoDraftSourcePayload } from '@/lib/auto-blog-drafts';
 import { getContentPool, hasContentDatabaseUrl } from '@/lib/postgres';
 
 export interface BlogPost {
@@ -13,6 +14,10 @@ export interface BlogPost {
   contentAr: string;
   contentFr: string;
   isPublished: boolean;
+  sourceType: 'manual' | 'bot';
+  generationStatus: 'manual' | 'draft' | 'approved' | 'rejected';
+  sourcePayload: string;
+  generationModel: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -65,6 +70,10 @@ type BlogPostRow = {
   content_ar: string;
   content_fr: string;
   is_published: number | boolean;
+  source_type?: string | null;
+  generation_status?: string | null;
+  source_payload?: string | null;
+  generation_model?: string | null;
   created_at: string | Date;
   updated_at: string | Date;
 };
@@ -109,6 +118,26 @@ function normalizeTags(value: string): string[] {
     .filter(Boolean);
 }
 
+function normalizeSourceType(value: unknown): 'manual' | 'bot' {
+  return value === 'bot' ? 'bot' : 'manual';
+}
+
+function normalizeGenerationStatus(
+  value: unknown,
+  isPublished: boolean,
+): 'manual' | 'draft' | 'approved' | 'rejected' {
+  if (
+    value === 'draft' ||
+    value === 'approved' ||
+    value === 'rejected' ||
+    value === 'manual'
+  ) {
+    return value;
+  }
+
+  return isPublished ? 'approved' : 'manual';
+}
+
 function slugify(value: string): string {
   return value
     .toLowerCase()
@@ -120,6 +149,11 @@ function slugify(value: string): string {
 }
 
 function mapBlogPost(row: BlogPostRow): BlogPost {
+  const isPublished =
+    typeof row.is_published === 'boolean'
+      ? row.is_published
+      : Boolean(row.is_published);
+
   return {
     id: Number(row.id),
     slug: row.slug,
@@ -131,10 +165,11 @@ function mapBlogPost(row: BlogPostRow): BlogPost {
     excerptFr: row.excerpt_fr,
     contentAr: row.content_ar,
     contentFr: row.content_fr,
-    isPublished:
-      typeof row.is_published === 'boolean'
-        ? row.is_published
-        : Boolean(row.is_published),
+    isPublished,
+    sourceType: normalizeSourceType(row.source_type),
+    generationStatus: normalizeGenerationStatus(row.generation_status, isPublished),
+    sourcePayload: String(row.source_payload || ''),
+    generationModel: String(row.generation_model || ''),
     createdAt: normalizeStoredTimestamp(row.created_at),
     updatedAt: normalizeStoredTimestamp(row.updated_at),
   };
@@ -259,6 +294,10 @@ async function ensureSqliteContentTables() {
           content_ar TEXT NOT NULL,
           content_fr TEXT NOT NULL,
           is_published INTEGER NOT NULL DEFAULT 1,
+          source_type TEXT NOT NULL DEFAULT 'manual',
+          generation_status TEXT NOT NULL DEFAULT 'manual',
+          source_payload TEXT NOT NULL DEFAULT '',
+          generation_model TEXT NOT NULL DEFAULT '',
           created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
           updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
@@ -308,6 +347,10 @@ async function ensurePostgresContentTables() {
           content_ar TEXT NOT NULL,
           content_fr TEXT NOT NULL,
           is_published BOOLEAN NOT NULL DEFAULT TRUE,
+          source_type TEXT NOT NULL DEFAULT 'manual',
+          generation_status TEXT NOT NULL DEFAULT 'manual',
+          source_payload TEXT NOT NULL DEFAULT '',
+          generation_model TEXT NOT NULL DEFAULT '',
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
@@ -316,6 +359,37 @@ async function ensurePostgresContentTables() {
           key TEXT PRIMARY KEY,
           value TEXT NOT NULL DEFAULT ''
         );
+      `);
+
+      await pool.query(`
+        ALTER TABLE blog_posts
+        ADD COLUMN IF NOT EXISTS source_type TEXT NOT NULL DEFAULT 'manual'
+      `);
+      await pool.query(`
+        ALTER TABLE blog_posts
+        ADD COLUMN IF NOT EXISTS generation_status TEXT NOT NULL DEFAULT 'manual'
+      `);
+      await pool.query(`
+        ALTER TABLE blog_posts
+        ADD COLUMN IF NOT EXISTS source_payload TEXT NOT NULL DEFAULT ''
+      `);
+      await pool.query(`
+        ALTER TABLE blog_posts
+        ADD COLUMN IF NOT EXISTS generation_model TEXT NOT NULL DEFAULT ''
+      `);
+      await pool.query(`
+        UPDATE blog_posts
+        SET source_type = CASE
+              WHEN tags ILIKE '%auto-draft%' THEN 'bot'
+              ELSE COALESCE(source_type, 'manual')
+            END,
+            generation_status = CASE
+              WHEN generation_status IN ('draft', 'approved', 'rejected', 'manual')
+                THEN generation_status
+              WHEN is_published = TRUE THEN 'approved'
+              WHEN tags ILIKE '%auto-draft%' THEN 'draft'
+              ELSE 'manual'
+            END
       `);
 
       for (const [key, value] of Object.entries(DEFAULT_SITE_SETTINGS)) {
@@ -467,9 +541,11 @@ export async function saveSiteSettings(
 
 export async function listBlogPosts(options?: {
   includeDrafts?: boolean;
+  includeRejected?: boolean;
 }): Promise<BlogPost[]> {
   try {
     const includeDrafts = options?.includeDrafts ?? false;
+    const includeRejected = options?.includeRejected ?? false;
 
     if (usePostgresContentStore()) {
       const pool = await ensurePostgresContentTables();
@@ -477,7 +553,11 @@ export async function listBlogPosts(options?: {
         `
           SELECT *
           FROM blog_posts
-          ${includeDrafts ? '' : 'WHERE is_published = TRUE'}
+          ${includeDrafts
+            ? includeRejected
+              ? ''
+              : "WHERE generation_status <> 'rejected'"
+            : 'WHERE is_published = TRUE'}
           ORDER BY date DESC, id DESC
         `,
       );
@@ -490,7 +570,9 @@ export async function listBlogPosts(options?: {
       `
         SELECT *
         FROM blog_posts
-        ${includeDrafts ? '' : 'WHERE is_published = 1'}
+        ${includeDrafts
+          ? ''
+          : 'WHERE is_published = 1'}
         ORDER BY date DESC, id DESC
       `,
     );
@@ -541,6 +623,47 @@ export async function getBlogPostBySlug(
     return row ? mapBlogPost(row) : null;
   } catch (error) {
     logReadFallback(`blog post "${slug}"`, error);
+    return null;
+  }
+}
+
+export async function getBlogPostById(id: string): Promise<BlogPost | null> {
+  const numericId = Number(id);
+  if (!Number.isFinite(numericId) || numericId <= 0) {
+    return null;
+  }
+
+  try {
+    if (usePostgresContentStore()) {
+      const pool = await ensurePostgresContentTables();
+      const result = await pool.query<BlogPostRow>(
+        `
+          SELECT *
+          FROM blog_posts
+          WHERE id = $1
+          LIMIT 1
+        `,
+        [numericId],
+      );
+
+      const row = result.rows[0];
+      return row ? mapBlogPost(row) : null;
+    }
+
+    const db = await getDb();
+    const row = await db.get<BlogPostRow>(
+      `
+        SELECT *
+        FROM blog_posts
+        WHERE id = ?
+        LIMIT 1
+      `,
+      numericId,
+    );
+
+    return row ? mapBlogPost(row) : null;
+  } catch (error) {
+    logReadFallback(`blog post id "${id}"`, error);
     return null;
   }
 }
@@ -598,6 +721,11 @@ export async function saveBlogPost(input: {
               content_ar = $8,
               content_fr = $9,
               is_published = $10,
+              generation_status = CASE
+                WHEN source_type = 'bot' AND $10 = TRUE THEN 'approved'
+                WHEN source_type = 'bot' AND $10 = FALSE AND generation_status = 'approved' THEN 'draft'
+                ELSE generation_status
+              END,
               updated_at = $11
           WHERE id = $12
           RETURNING *
@@ -784,4 +912,168 @@ export async function deleteBlogPost(id: string): Promise<string | null> {
   await db.run('DELETE FROM blog_posts WHERE id = ?', numericId);
 
   return existing.slug;
+}
+
+export async function approveBlogDraft(id: string): Promise<BlogPost | null> {
+  const numericId = Number(id);
+
+  if (!Number.isFinite(numericId) || numericId <= 0) {
+    return null;
+  }
+
+  if (usePostgresContentStore()) {
+    const pool = await ensurePostgresContentTables();
+    const result = await pool.query<BlogPostRow>(
+      `
+        UPDATE blog_posts
+        SET is_published = TRUE,
+            generation_status = CASE
+              WHEN source_type = 'bot' THEN 'approved'
+              ELSE generation_status
+            END,
+            updated_at = $2
+        WHERE id = $1
+        RETURNING *
+      `,
+      [numericId, new Date().toISOString()],
+    );
+
+    const row = result.rows[0];
+    return row ? mapBlogPost(row) : null;
+  }
+
+  const existing = await getBlogPostById(id);
+  if (!existing) {
+    return null;
+  }
+
+  return saveBlogPost({
+    id,
+    slug: existing.slug,
+    date: existing.date,
+    tags: existing.tags.join(', '),
+    titleAr: existing.titleAr,
+    titleFr: existing.titleFr,
+    excerptAr: existing.excerptAr,
+    excerptFr: existing.excerptFr,
+    contentAr: existing.contentAr,
+    contentFr: existing.contentFr,
+    isPublished: true,
+  });
+}
+
+export async function rejectBlogDraft(id: string): Promise<BlogPost | null> {
+  const numericId = Number(id);
+
+  if (!Number.isFinite(numericId) || numericId <= 0) {
+    return null;
+  }
+
+  if (usePostgresContentStore()) {
+    const pool = await ensurePostgresContentTables();
+    const result = await pool.query<BlogPostRow>(
+      `
+        UPDATE blog_posts
+        SET is_published = FALSE,
+            generation_status = CASE
+              WHEN source_type = 'bot' THEN 'rejected'
+              ELSE generation_status
+            END,
+            updated_at = $2
+        WHERE id = $1
+        RETURNING *
+      `,
+      [numericId, new Date().toISOString()],
+    );
+
+    const row = result.rows[0];
+    return row ? mapBlogPost(row) : null;
+  }
+
+  return getBlogPostById(id);
+}
+
+export async function regenerateBlogDraft(id: string): Promise<BlogPost | null> {
+  const existing = await getBlogPostById(id);
+
+  if (!existing || existing.sourceType !== 'bot') {
+    return null;
+  }
+
+  const jobs = parseAutoDraftSourcePayload(existing.sourcePayload);
+  const regenerated = buildAutoDraftFromJobs(jobs, existing.date);
+
+  if (!regenerated) {
+    return null;
+  }
+
+  const numericId = Number(id);
+  const now = new Date().toISOString();
+
+  if (usePostgresContentStore()) {
+    const pool = await ensurePostgresContentTables();
+    const result = await pool.query<BlogPostRow>(
+      `
+        UPDATE blog_posts
+        SET date = $2,
+            tags = $3,
+            title_ar = $4,
+            title_fr = $5,
+            excerpt_ar = $6,
+            excerpt_fr = $7,
+            content_ar = $8,
+            content_fr = $9,
+            is_published = FALSE,
+            generation_status = 'draft',
+            updated_at = $10
+        WHERE id = $1
+        RETURNING *
+      `,
+      [
+        numericId,
+        regenerated.date,
+        regenerated.tags,
+        regenerated.title_ar,
+        regenerated.title_fr,
+        regenerated.excerpt_ar,
+        regenerated.excerpt_fr,
+        regenerated.content_ar,
+        regenerated.content_fr,
+        now,
+      ],
+    );
+
+    const row = result.rows[0];
+    return row ? mapBlogPost(row) : null;
+  }
+
+  const db = await ensureSqliteContentTables();
+  await db.run(
+    `
+      UPDATE blog_posts
+      SET date = ?,
+          tags = ?,
+          title_ar = ?,
+          title_fr = ?,
+          excerpt_ar = ?,
+          excerpt_fr = ?,
+          content_ar = ?,
+          content_fr = ?,
+          is_published = 0,
+          updated_at = ?
+      WHERE id = ?
+    `,
+    regenerated.date,
+    regenerated.tags,
+    regenerated.title_ar,
+    regenerated.title_fr,
+    regenerated.excerpt_ar,
+    regenerated.excerpt_fr,
+    regenerated.content_ar,
+    regenerated.content_fr,
+    now,
+    numericId,
+  );
+
+  return getBlogPostById(id);
 }

@@ -263,7 +263,7 @@ export default async function AdminPage(props: {
   const lang = (searchParams.lang === 'fr' ? 'fr' : 'ar') as Lang;
   const ui = getUi(lang);
   const [posts, settings, legacyCards] = await Promise.all([
-    listBlogPosts({ includeDrafts: true }),
+    listBlogPosts({ includeDrafts: true, includeRejected: true }),
     getSiteSettings(),
     listLegacyBlogCards(),
   ]);
@@ -284,15 +284,41 @@ export default async function AdminPage(props: {
   const staticArticles = legacyCards.length;
   const databaseArticles = posts.length;
   const publishedPosts = posts.filter((post) => post.isPublished).length;
-  const draftPosts = posts.length - publishedPosts;
+  const draftPosts = posts.filter(
+    (post) => !post.isPublished && post.generationStatus !== 'rejected',
+  ).length;
   const latestPostDate =
     [...articleDates.values()].sort((left, right) => right.localeCompare(left))[0] ||
     ui.noPostYet;
 
   const flashMessage = searchParams.error === 'readonly'
     ? ui.readOnlyAction
+    : searchParams.error === 'approve'
+      ? lang === 'fr'
+        ? "Impossible d'approuver ce brouillon pour le moment."
+        : 'تعذر نشر هذه المسودة حاليا.'
+      : searchParams.error === 'reject'
+        ? lang === 'fr'
+          ? 'Impossible de rejeter ce brouillon pour le moment.'
+          : 'تعذر رفض هذه المسودة حاليا.'
+        : searchParams.error === 'regenerate'
+          ? lang === 'fr'
+            ? 'Impossible de regenerer ce brouillon pour le moment.'
+            : 'تعذر اعادة صياغة هذه المسودة حاليا.'
     : searchParams.deleted
       ? ui.deletedPost
+      : searchParams.saved === 'approved'
+        ? lang === 'fr'
+          ? "Le brouillon du bot est maintenant publie."
+          : 'تم نشر مسودة البوت بنجاح.'
+        : searchParams.saved === 'rejected'
+          ? lang === 'fr'
+            ? 'Le brouillon du bot a ete classe comme rejete.'
+            : 'تم نقل مسودة البوت الى حالة مرفوض.'
+          : searchParams.saved === 'regenerated'
+            ? lang === 'fr'
+              ? 'Le brouillon du bot a ete regenere a partir de ses sources.'
+              : 'تمت اعادة صياغة مسودة البوت انطلاقا من مصادرها.'
       : searchParams.saved === 'settings'
         ? ui.savedSettings
         : searchParams.saved === 'post'

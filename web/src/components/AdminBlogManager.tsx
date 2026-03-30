@@ -1,12 +1,16 @@
 import Link from 'next/link';
 import {
+  approveBlogDraftAction,
   deleteBlogPostAction,
+  regenerateBlogDraftAction,
+  rejectBlogDraftAction,
   saveBlogPostAction,
 } from '@/app/admin/actions';
+import { AdminPostEditor } from '@/components/AdminPostEditor';
 import type { BlogPost } from '@/lib/content';
 
 type Lang = 'ar' | 'fr';
-type AdminPostFilter = 'all' | 'published' | 'draft';
+type AdminPostFilter = 'all' | 'published' | 'draft' | 'rejected';
 const POSTS_PER_PAGE = 6;
 
 function getUi(lang: Lang) {
@@ -91,7 +95,9 @@ function getUi(lang: Lang) {
 }
 
 function normalizeAdminPostFilter(value: string | undefined): AdminPostFilter {
-  return value === 'published' || value === 'draft' ? value : 'all';
+  return value === 'published' || value === 'draft' || value === 'rejected'
+    ? value
+    : 'all';
 }
 
 function normalizePage(value: string | undefined) {
@@ -119,8 +125,9 @@ function includesQuery(post: BlogPost, query: string) {
 }
 
 function matchesStatus(post: BlogPost, status: AdminPostFilter) {
+  if (status === 'rejected') return post.generationStatus === 'rejected';
   if (status === 'published') return post.isPublished;
-  if (status === 'draft') return !post.isPublished;
+  if (status === 'draft') return !post.isPublished && post.generationStatus !== 'rejected';
   return true;
 }
 
@@ -192,7 +199,20 @@ export function AdminBlogManager({
   posts: BlogPost[];
   searchParams: { [key: string]: string | undefined };
 }) {
-  const ui = getUi(lang);
+  const baseUi = getUi(lang);
+  const ui = {
+    ...baseUi,
+    statusRejected: lang === 'fr' ? 'Rejete' : 'مرفوض',
+    sourceBot: lang === 'fr' ? 'Brouillon bot' : 'مسودة البوت',
+    sourceManual: lang === 'fr' ? 'Edition manuelle' : 'تعديل يدوي',
+    sourcePayloadMissing:
+      lang === 'fr'
+        ? 'Regeneration indisponible: source du draft absente.'
+        : 'اعادة الصياغة غير متاحة لان بيانات المصدر غير موجودة.',
+    approveDraft: lang === 'fr' ? 'Approuver et publier' : 'نشر المسودة',
+    rejectDraft: lang === 'fr' ? 'Rejeter' : 'رفض المسودة',
+    regenerateDraft: lang === 'fr' ? 'Regenerer le draft' : 'اعادة صياغة المسودة',
+  };
   const searchQuery = (searchParams.q || '').trim().toLowerCase();
   const selectedStatus = normalizeAdminPostFilter(searchParams.status);
   const editedSlug = (searchParams.edited || '').trim();
@@ -206,6 +226,7 @@ export function AdminBlogManager({
     currentPage * POSTS_PER_PAGE,
   );
   const hasFilters = Boolean(searchQuery) || selectedStatus !== 'all';
+  const defaultPostDate = new Date().toISOString().slice(0, 10);
 
   return (
     <>
@@ -231,6 +252,7 @@ export function AdminBlogManager({
                 <option value="all">{ui.allPosts}</option>
                 <option value="published">{ui.statusPublished}</option>
                 <option value="draft">{ui.statusDraft}</option>
+                <option value="rejected">{ui.statusRejected}</option>
               </select>
             </label>
           </div>
@@ -283,72 +305,25 @@ export function AdminBlogManager({
             >
               {ui.statusDraft}
             </Link>
+            <Link
+              href={buildAdminHref(lang, { q: searchParams.q || undefined, status: 'rejected' }, 'blog')}
+              className={`rounded-full px-3 py-2 text-xs font-black uppercase tracking-[0.16em] transition ${selectedStatus === 'rejected' ? 'bg-rose-600 text-white' : 'border border-rose-200 bg-white text-rose-700 hover:bg-rose-50'}`}
+            >
+              {ui.statusRejected}
+            </Link>
           </div>
         </div>
       </div>
 
       <div className="rounded-3xl border border-blue-100 bg-blue-50 p-5">
         <h3 className="text-lg font-black text-slate-900">{ui.newPost}</h3>
-        <form action={saveBlogPostAction} className="mt-5 space-y-5">
-          <input type="hidden" name="lang" value={lang} />
-          <div className="grid gap-5 md:grid-cols-2">
-            <Field label={ui.labels.slug} name="slug" required />
-            <Field
-              label={ui.labels.date}
-              name="date"
-              type="date"
-              defaultValue={new Date().toISOString().slice(0, 10)}
-              required
-            />
-            <Field label={ui.labels.tags} name="tags" />
-            <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700">
-              <input
-                type="checkbox"
-                name="isPublished"
-                defaultChecked
-                className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-              />
-              {ui.labels.isPublished}
-            </label>
-            <Field label={ui.labels.titleAr} name="titleAr" required />
-            <Field label={ui.labels.titleFr} name="titleFr" required />
-            <Field
-              label={ui.labels.excerptAr}
-              name="excerptAr"
-              textarea
-              rows={4}
-              required
-            />
-            <Field
-              label={ui.labels.excerptFr}
-              name="excerptFr"
-              textarea
-              rows={4}
-              required
-            />
-            <Field
-              label={ui.labels.contentAr}
-              name="contentAr"
-              textarea
-              rows={12}
-              required
-            />
-            <Field
-              label={ui.labels.contentFr}
-              name="contentFr"
-              textarea
-              rows={12}
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800"
-          >
-            {ui.createPost}
-          </button>
-        </form>
+        <AdminPostEditor
+          lang={lang}
+          action={saveBlogPostAction}
+          submitLabel={ui.createPost}
+          defaultDate={defaultPostDate}
+          hiddenFields={{ lang }}
+        />
       </div>
 
       <div className="mt-6 space-y-4">
@@ -391,12 +366,27 @@ export function AdminBlogManager({
                   <div className="flex items-center gap-2">
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.16em] ${
-                        post.isPublished
+                        post.generationStatus === 'rejected'
+                          ? 'bg-rose-100 text-rose-800'
+                          : post.isPublished
                           ? 'bg-emerald-100 text-emerald-800'
                           : 'bg-amber-100 text-amber-800'
                       }`}
                     >
-                      {post.isPublished ? ui.statusPublished : ui.statusDraft}
+                      {post.generationStatus === 'rejected'
+                        ? ui.statusRejected
+                        : post.isPublished
+                          ? ui.statusPublished
+                          : ui.statusDraft}
+                    </span>
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.16em] ${
+                        post.sourceType === 'bot'
+                          ? 'bg-violet-100 text-violet-800'
+                          : 'bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      {post.sourceType === 'bot' ? ui.sourceBot : ui.sourceManual}
                     </span>
                     <span className="rounded-full bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-slate-700">
                       {post.date}
@@ -427,98 +417,77 @@ export function AdminBlogManager({
                       {ui.viewPost}
                     </Link>
                   )}
+                  {post.sourceType === 'bot' && !post.isPublished && post.generationStatus !== 'rejected' && (
+                    <span className="rounded-full bg-violet-50 px-3 py-2 text-violet-700">
+                      {post.sourcePayload ? ui.regenerateDraft : ui.sourcePayloadMissing}
+                    </span>
+                  )}
                 </div>
 
-                <form
-                  action={saveBlogPostAction}
-                  className="mt-5 space-y-5 border-t border-slate-200 pt-5"
-                >
-                  <input type="hidden" name="lang" value={lang} />
-                  <input type="hidden" name="id" value={String(post.id)} />
-                  <input type="hidden" name="q" value={searchParams.q || ''} />
-                  <input type="hidden" name="status" value={selectedStatus} />
-                  <input type="hidden" name="page" value={String(currentPage)} />
-                  <div className="grid gap-5 md:grid-cols-2">
-                    <Field
-                      label={ui.labels.slug}
-                      name="slug"
-                      defaultValue={post.slug}
-                      required
-                    />
-                    <Field
-                      label={ui.labels.date}
-                      name="date"
-                      type="date"
-                      defaultValue={post.date}
-                      required
-                    />
-                    <Field
-                      label={ui.labels.tags}
-                      name="tags"
-                      defaultValue={post.tags.join(', ')}
-                    />
-                    <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700">
-                      <input
-                        type="checkbox"
-                        name="isPublished"
-                        defaultChecked={post.isPublished}
-                        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      {ui.labels.isPublished}
-                    </label>
-                    <Field
-                      label={ui.labels.titleAr}
-                      name="titleAr"
-                      defaultValue={post.titleAr}
-                      required
-                    />
-                    <Field
-                      label={ui.labels.titleFr}
-                      name="titleFr"
-                      defaultValue={post.titleFr}
-                      required
-                    />
-                    <Field
-                      label={ui.labels.excerptAr}
-                      name="excerptAr"
-                      defaultValue={post.excerptAr}
-                      textarea
-                      rows={4}
-                      required
-                    />
-                    <Field
-                      label={ui.labels.excerptFr}
-                      name="excerptFr"
-                      defaultValue={post.excerptFr}
-                      textarea
-                      rows={4}
-                      required
-                    />
-                    <Field
-                      label={ui.labels.contentAr}
-                      name="contentAr"
-                      defaultValue={post.contentAr}
-                      textarea
-                      rows={12}
-                      required
-                    />
-                    <Field
-                      label={ui.labels.contentFr}
-                      name="contentFr"
-                      defaultValue={post.contentFr}
-                      textarea
-                      rows={12}
-                      required
-                    />
-                  </div>
+                {post.sourceType === 'bot' && !post.isPublished && post.generationStatus !== 'rejected' && (
+                  <div className="mt-4 flex flex-wrap gap-3 border-t border-slate-200 pt-4">
+                    <form action={approveBlogDraftAction}>
+                      <input type="hidden" name="lang" value={lang} />
+                      <input type="hidden" name="id" value={String(post.id)} />
+                      <input type="hidden" name="q" value={searchParams.q || ''} />
+                      <input type="hidden" name="status" value={selectedStatus} />
+                      <input type="hidden" name="page" value={String(currentPage)} />
+                      <button
+                        type="submit"
+                        className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white transition hover:bg-emerald-700"
+                      >
+                        {ui.approveDraft}
+                      </button>
+                    </form>
 
-                  <button
-                    type="submit"
-                    className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white transition hover:bg-blue-700"
-                  >
-                    {ui.savePost}
-                  </button>
-                </form>
+                    <form action={rejectBlogDraftAction}>
+                      <input type="hidden" name="lang" value={lang} />
+                      <input type="hidden" name="id" value={String(post.id)} />
+                      <input type="hidden" name="q" value={searchParams.q || ''} />
+                      <input type="hidden" name="status" value={selectedStatus} />
+                      <input type="hidden" name="page" value={String(currentPage)} />
+                      <button
+                        type="submit"
+                        className="rounded-2xl bg-rose-50 px-5 py-3 text-sm font-black text-rose-700 transition hover:bg-rose-100"
+                      >
+                        {ui.rejectDraft}
+                      </button>
+                    </form>
+
+                    {post.sourcePayload ? (
+                      <form action={regenerateBlogDraftAction}>
+                        <input type="hidden" name="lang" value={lang} />
+                        <input type="hidden" name="id" value={String(post.id)} />
+                        <input type="hidden" name="q" value={searchParams.q || ''} />
+                        <input type="hidden" name="status" value={selectedStatus} />
+                        <input type="hidden" name="page" value={String(currentPage)} />
+                        <button
+                          type="submit"
+                          className="rounded-2xl bg-violet-50 px-5 py-3 text-sm font-black text-violet-700 transition hover:bg-violet-100"
+                        >
+                          {ui.regenerateDraft}
+                        </button>
+                      </form>
+                    ) : null}
+                  </div>
+                )}
+
+                <div className="mt-5 border-t border-slate-200 pt-5">
+                  <AdminPostEditor
+                    lang={lang}
+                    action={saveBlogPostAction}
+                    submitLabel={ui.savePost}
+                    initialPost={post}
+                    defaultDate={defaultPostDate}
+                    hiddenFields={{
+                      lang,
+                      id: String(post.id),
+                      q: searchParams.q || '',
+                      status: selectedStatus,
+                      page: String(currentPage),
+                    }}
+                  />
+                </div>
 
                 <form action={deleteBlogPostAction} className="mt-3">
                   <input type="hidden" name="lang" value={lang} />
